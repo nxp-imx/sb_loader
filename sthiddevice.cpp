@@ -282,7 +282,7 @@ int CStHidDevice::Write(UCHAR* _buf, ULONG _size)
     }
 
     // wait for completion
-    if( (status = ::WaitForSingleObjectEx( m_sync_event_tx, DEVICE_TIMEOUT, TRUE )) == WAIT_TIMEOUT )
+    if( (status = ::WaitForSingleObjectEx( m_sync_event_tx, INFINITE, TRUE )) == WAIT_TIMEOUT )
     {
         ::CancelIo( m_hid_drive_handle );
         return WAIT_TIMEOUT;
