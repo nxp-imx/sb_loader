@@ -11,7 +11,7 @@
 DEFINE_GUID( GUID_DEVINTERFACE_HID, 0x4D1E55B2L, 0xF16F, 0x11CF, \
             0x88, 0xCB, 0x00, 0x11, 0x11, 0x00, 0x00, 0x30);
 
-#define DEVICE_TIMEOUT			5000 // ms
+#define DEVICE_TIMEOUT			INFINITE // 5000 ms
 
 HANDLE CStHidDevice::m_sync_event_tx = NULL;
 HANDLE CStHidDevice::m_sync_event_rx = NULL;
@@ -246,6 +246,12 @@ int CStHidDevice::Download(UCHAR* data, ULONGLONG size, CString indent)
 		if ( iteration % 30 == 0 )
 			_tprintf(_T("."));
 	}
+
+	if( current_pos_in_arr + ulWriteSize > size)
+		ulWriteSize = size - current_pos_in_arr;
+	
+	if( ulWriteSize >= m_Capabilities.OutputReportByteLength)
+		ulWriteSize = m_Capabilities.OutputReportByteLength -1;
 
 	memset( m_pWriteReport, 0xDB, ulWriteSize);
 

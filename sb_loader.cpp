@@ -175,6 +175,10 @@ bool ProcessCommandLine(int argc, TCHAR* argv[], CString& fwFilename, ExtendedFu
 		{
 			PrintUsage();
 			ret = false;
+		}else if ( arg.CompareNoCase(_T("/v")) == 0 )
+		{
+			_tprintf(_T("version 0.2 build %s"), _T(__DATE__));
+			ret = false;
 		}
 	}
 
