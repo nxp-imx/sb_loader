@@ -248,7 +248,7 @@ int CStHidDevice::Download(UCHAR* data, ULONGLONG size, CString indent)
 	}
 
 	if( current_pos_in_arr + ulWriteSize > size)
-		ulWriteSize = size - current_pos_in_arr;
+		ulWriteSize = (ULONG)(size - current_pos_in_arr);
 	
 	if( ulWriteSize >= m_Capabilities.OutputReportByteLength)
 		ulWriteSize = m_Capabilities.OutputReportByteLength -1;
