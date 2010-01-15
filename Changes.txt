@@ -1,0 +1,20 @@
+
+Changes to sb_loader.exe
+
+=======================================================================================
+
+1.0  5/22/2009
+
+- Added commandline parameters for filename and tss.
+
+	/f <filename> - names the file to load to a HID device. Default: firmware.sb
+	/tss - causes the app to monitor the TSS output after loading the firmware file.
+
+- Cleaned up the device change notification threads.
+- Cleaned up some memory leaks.
+
+=======================================================================================
+
+0.1  5/19/2009
+	- Initial check-in.
+	
