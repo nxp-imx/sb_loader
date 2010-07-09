@@ -1,4 +1,20 @@
+#include "stdafx.h"
+#include <Dbt.h>
+#include "Common/StdString.h"
 
+#include <basetyps.h>
+#include <setupapi.h>
+#include <initguid.h>
+#pragma warning( push )
+#pragma warning( disable : 4201 )
+
+extern "C" {
+    #include "hidsdi.h"
+}
+#pragma warning( pop )
+#include "hiddevice.h"
+#include "StHidDevice.h"
+#include "MxHidDevice.h"
 #include "DeviceManager.h"
 #include "sb_loader.h"
 #include <initguid.h>
@@ -152,13 +168,13 @@ int DeviceManager::ExitInstance()
 }
 
 // Runs in the context of the Client thread.
-CStHidDevice* DeviceManager::FindHidDevice(USHORT vid, USHORT pid, int timeout)
+bool DeviceManager::FindHidDevice(CHidDevice* pHidDevice,USHORT vid, USHORT pid, int timeout)
 {
     ATLTRACE(_T("+DeviceManager::FindHidDevice()\n"));
-
-	CStHidDevice* pHidDevice = new CStHidDevice();
-	if ( pHidDevice->Initialize(vid, pid) == ERROR_SUCCESS )
-		return pHidDevice;
+	bool bRet = TRUE;
+	
+	if ( pHidDevice->FindKnownHidDevices(vid, pid) == ERROR_SUCCESS )
+		return TRUE;
 
     //
     // We didn't find a device on our first pass
@@ -167,7 +183,7 @@ CStHidDevice* DeviceManager::FindHidDevice(USHORT vid, USHORT pid, int timeout)
     if ( timeout == 0 )
     {
         ATLTRACE(_T("-DeviceManager::FindHidDevice() : No device, not waiting.\n"));
-        return NULL;
+        return FALSE;
     }
 
 	_tprintf(_T("  Waiting for HID device for %d seconds...\n"), timeout);
@@ -186,7 +202,7 @@ CStHidDevice* DeviceManager::FindHidDevice(USHORT vid, USHORT pid, int timeout)
 
     HANDLE waitHandles[2] = { _hChangeEvent, hTimer };
     DWORD waitResult;
-    while( pHidDevice->Initialize(vid, pid) != ERROR_SUCCESS )
+    while( pHidDevice->FindKnownHidDevices(vid, pid) != ERROR_SUCCESS )
     {
 
         waitResult = MsgWaitForMultipleObjects(2, &waitHandles[0], false, INFINITE, 0);
@@ -201,8 +217,9 @@ CStHidDevice* DeviceManager::FindHidDevice(USHORT vid, USHORT pid, int timeout)
         else if ( waitResult == WAIT_OBJECT_0 + 1 )
         {
             // Timeout
-			delete pHidDevice;
-			pHidDevice = NULL;
+			//delete pHidDevice;
+			//pHidDevice = NULL;
+			bRet = FALSE;
             break;
         }
         else
@@ -216,7 +233,7 @@ CStHidDevice* DeviceManager::FindHidDevice(USHORT vid, USHORT pid, int timeout)
     _hChangeEvent = NULL;
     
 	ATLTRACE(_T("-DeviceManager::FindHidDevice() : %s.\n"), pHidDevice ? _T("Found device") : _T("No device"));
-	return pHidDevice;
+	return bRet;
 }
 
 bool DeviceManager::WaitForChange(DevChangeEvent eventType, int timeout)
@@ -388,7 +405,7 @@ void DeviceManager::OnMsgDeviceEvent(WPARAM eventType, LPARAM desc)
 
 	_lastEventType = (DevChangeEvent)eventType;
 
-	// Signal anyone waiting on a device change to go see what changed. See FindDevice() for example.
+	// Signal anyone waiting on a device change to go see what changed. See FindKnownHidDevices() for example.
     if (_hChangeEvent)
 	{
 		VERIFY(::SetEvent(_hChangeEvent));

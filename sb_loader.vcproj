@@ -42,6 +42,7 @@
 			<Tool
 				Name="VCCLCompilerTool"
 				Optimization="0"
+				AdditionalIncludeDirectories="..\..\;..\;$(WMSDK)\WMDM\inc"
 				PreprocessorDefinitions="WIN32;_DEBUG;_CONSOLE"
 				MinimalRebuild="true"
 				BasicRuntimeChecks="3"
@@ -63,6 +64,7 @@
 				Name="VCLinkerTool"
 				AdditionalDependencies="setupapi.lib"
 				LinkIncremental="2"
+				AdditionalLibraryDirectories="hid.lib"
 				GenerateDebugInformation="true"
 				SubSystem="1"
 				TargetMachine="1"
@@ -117,6 +119,7 @@
 				Name="VCCLCompilerTool"
 				Optimization="2"
 				EnableIntrinsicFunctions="true"
+				AdditionalIncludeDirectories="..\..\;..\;"
 				PreprocessorDefinitions="WIN32;NDEBUG;_CONSOLE"
 				RuntimeLibrary="0"
 				EnableFunctionLevelLinking="true"
@@ -179,6 +182,14 @@
 				>
 			</File>
 			<File
+				RelativePath=".\HidDevice.cpp"
+				>
+			</File>
+			<File
+				RelativePath=".\MxHidDevice.cpp"
+				>
+			</File>
+			<File
 				RelativePath=".\sb_loader.cpp"
 				>
 			</File>
@@ -217,6 +228,10 @@
 				>
 			</File>
 			<File
+				RelativePath=".\HidDevice.h"
+				>
+			</File>
+			<File
 				RelativePath=".\hidpi.h"
 				>
 			</File>
@@ -226,6 +241,10 @@
 			</File>
 			<File
 				RelativePath=".\hidusage.h"
+				>
+			</File>
+			<File
+				RelativePath=".\MxHidDevice.h"
 				>
 			</File>
 			<File

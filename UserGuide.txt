@@ -1,0 +1,24 @@
+The tool is used to download an image to target platform to run. At presetn, the tool supports mx233/28/508 platforms.
+Please run the tool in a command line environment:
+1. Open a command window
+2. Enter the dir in which sb_loader.exe locates
+3. Copy your image to the same dir
+
+For mx28, the command is like this: 
+sb_loader -imx28 /f xxx.sb
+
+For mx233, the command is like this: 
+sb_loader -imx23 /f xxx.sb
+
+For mx508, the command is more complicated: 
+A bunch of commands must be executed one by one to finish the job, Let's give an example to explain this:
+sb_loader -imx508 -init MDDR
+sb_loader -imx508 -trans 0x77800000 /f u-boot.bin
+sb_loader -imx508 -exec 0x77800000 0x00 /f u-boot.bin
+
+First command: the command is used to initialize RAM. Parameter "MDDR" indicates the type of RAM is MDDR, change the parameter to "LPDDR2" if you use a LPDDR2 RAM.
+
+Second command: the command is used to transfer an image to RAM of target platform. Parameter "0x77800000" is the starting physical address of the image is stored in RAM, change it according to your image setting. Parameter "u-boot.bin" is the name of your image.The command can be executed for multiple times if you have multiple image need to be downloaded.
+
+Last command: the command is used to run an image in RAM.  Parameter "0x77800000" is the starting physical address of the image need to run in RAM;  Parameter "0x00" is the address offset within the image where the first instruct to be executed locates. Parameter "u-boot.bin" is the name of the image to be executed.
+

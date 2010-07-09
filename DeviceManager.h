@@ -45,11 +45,7 @@
   ________  ___  _____________________________________________________________
   07/21/06  clw  initial version
 ============================================================================*/
-#pragma once
-#include "stdafx.h"
-#include "StHidDevice.h"
 
-#include <Dbt.h>
 
 DEFINE_GUID(CLSID_CANCEL_AUTOPLAY, 0x66a32fe6, 0x229d, 0x427b, 0xa6, 0x8, 0xd2, 0x73, 0xf4, 0xc, 0x3, 0x4c);
 
@@ -93,7 +89,7 @@ public:
 		return _ICancelAutoPlayCallbackObject.SetCancelAutoPlay(rejectAutoPlay, driveList);
 	};
 
-	CStHidDevice* FindHidDevice(USHORT vid, USHORT pid, int timeout);
+	bool FindHidDevice(CHidDevice* pHidDevice,USHORT vid, USHORT pid, int timeout);
 	bool WaitForChange(DevChangeEvent eventType, int timeout);
 	CString GetEventString(DevChangeEvent eventType);
 

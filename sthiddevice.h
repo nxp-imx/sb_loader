@@ -1,4 +1,4 @@
-// StRecoveryDev.h: interface for the CStHidDevice class.
+// St.h: interface for the CStHidDevice class.
 //
 //////////////////////////////////////////////////////////////////////
 
@@ -10,21 +10,6 @@
 #endif // _MSC_VER > 1000
 
 #define DEVICE_READ_TIMEOUT   10
-
-//#include "stdevice.h"
-
-#include <basetyps.h>
-#include <setupapi.h>
-#include <initguid.h>
-
-#pragma warning( push )
-#pragma warning( disable : 4201 )
-
-extern "C" {
-    //#include "usb200.h"
-    #include "hidsdi.h"
-}
-#pragma warning( pop )
 
 #pragma pack(1)
 //------------------------------------------------------------------------------
@@ -42,7 +27,7 @@ typedef struct _CDBHIDDOWNLOAD {
 //------------------------------------------------------------------------------
 struct _ST_HID_CBW
 {
-    UINT Signature;        // Signature: 0x43544C42, o "BLTC" (little endian) for the BLTC CBW
+    UINT Signature;        // Signature: 0x43544C42:1129598018, o "BLTC" (little endian) for the BLTC CBW
     UINT Tag;              // Tag: to be returned in the csw
     UINT XferLength;       // XferLength: number of bytes to transfer
     UCHAR Flags;            // Flags:
@@ -95,12 +80,6 @@ struct _ST_HID_COMMMAND_REPORT
     _ST_HID_CBW Cbw;
 };
 
-struct _ST_HID_DATA_REPORT
-{
-    UCHAR ReportId;
-    UCHAR Payload[32];
-};
-
 struct _ST_HID_STATUS_REPORT
 {
     UCHAR ReportId;
@@ -112,67 +91,12 @@ struct _ST_HID_STATUS_REPORT
 #define HID_BLTC_REPORT_TYPE_DATA_OUT		2
 #define HID_BLTC_REPORT_TYPE_COMMAND_OUT	1
 
-class CStFwComponent;
-
-class CStHidDevice
+class CStHidDevice:public CHidDevice
 {
 public:
     CStHidDevice();
     virtual ~CStHidDevice();
-
-    UINT const Swap4(const UCHAR *const p) const
-    {
-        return (p[0]<<24) + (p[1]<<16) + (p[2]<<8) + p[3];
-    }
-
-    int Initialize(USHORT vid, USHORT pid);
-    int Open(LPCTSTR _p_device_name);
-    int Close();
-    int Read(void* buf, UINT size);
-    int Write(UCHAR* buf, ULONG size);
-	int Download(UCHAR* data, ULONGLONG size, CString indent = _T(""));
-
-    CString GetUsbDeviceId() { return m_usb_device_id; }
-
-    static VOID CALLBACK WriteCompletionRoutine(DWORD dwErrorCode, DWORD dwNumberOfBytesTransfered,  
-        LPOVERLAPPED lpOverlapped);       
-    static VOID CALLBACK ReadCompletionRoutine(DWORD dwErrorCode, DWORD dwNumberOfBytesTransfered,  
-        LPOVERLAPPED lpOverlapped);
-
-    HANDLE	        m_hid_drive_handle;
-
-private:
-    int Trash();
-    int AllocateIoBuffers();
-    void FreeIoBuffers();
-
-    OVERLAPPED	    m_overlapped;
-    CString			m_device_name;
-    CString			m_usb_device_id;
-	USHORT          m_vid;
-	USHORT          m_pid;
-
-    static HANDLE	m_sync_event_tx;	
-    static HANDLE	m_sync_event_rx;	
-
-#pragma pack(1)
-
-    struct _ST_HID_DATA_REPORT
-    {
-        UCHAR ReportId;
-        UCHAR Payload[32];
-    };
-#pragma pack()
-
-    HIDP_CAPS				m_Capabilities;
-    _ST_HID_DATA_REPORT		*m_pReadReport;
-    _ST_HID_DATA_REPORT		*m_pWriteReport;
-
-    HANDLE OpenOneDevice (IN HDEVINFO HardwareDeviceInfo,
-        IN PSP_INTERFACE_DEVICE_DATA DeviceInfoData,
-        OUT CString& devName, OUT DWORD& devInst, rsize_t bufsize);
-    HANDLE OpenUsbDevice( LPGUID  pGuid, CString& outNameBuf, DWORD& outDevInst, rsize_t bufsize);
-    BOOL GetUsbDeviceFileName( LPGUID  pGuid, CString& outNameBuf, DWORD& outDevInst, rsize_t bufsize);
+    int Download(UCHAR* data, ULONGLONG size, CString indent = _T(""));
 };
 
 #endif // !defined(AFX_STHIDDEVICE_H__E57DC981_5DB4_4194_8912_CB96EB83F056__INCLUDED_)
