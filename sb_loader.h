@@ -12,3 +12,4 @@ void PrintUsage();
 int StDownload(int vid,int pid,CString fwFilename,UCHAR* fwBytes,ULONGLONG fwSize);
 int MxInit(int vid, int pid, MxHidDevice::PMxFunc pMxFunc);
 int MxDownload(int vid,int pid,CString fwFilename,UCHAR* fwBytes,ULONGLONG fwSize, MxHidDevice::PMxFunc pMxFunc);
+int MxExecute(int vid, int pid, MxHidDevice::PMxFunc pMxFunc);

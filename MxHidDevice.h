@@ -129,6 +129,7 @@ public:
 	BOOL InitMemoryDevice(MemoryType MemType);
 	//BOOL ProgramFlash(std::ifstream& file, UINT address, UINT cmdID, UINT flags, Device::UI_Callback callback);
 	BOOL Download(UCHAR* pBuffer, ULONGLONG dataCount, PMxFunc pMxFunc);
+    BOOL Execute(UINT32 ImageStartAddr);
 	//BOOL Reset();
 
 	// PROPERTIES

@@ -114,17 +114,14 @@ int _tmain(int argc, TCHAR* argv[], TCHAR* envp[])
 #ifdef TRAN_MODE    
     argc = 6;
     argv[2] = _T("-trans");
-    argv[3] = _T("0x77800000");
+    argv[3] = _T("0x70040000");
     argv[4] = _T("/f");
-    argv[5] = _T("u-boot.bin");
+    argv[5] = _T("eboot.nb0");
 #endif
 #ifdef EXEC_MODE
-    argc = 7;
+    argc = 4;
     argv[2] = _T("-exec");
-    argv[3] = _T("0x77800000");
-    argv[4] = _T("0x00");
-    argv[5] = _T("/f");
-    argv[6] = _T("u-boot.bin");
+    argv[3] = _T("0x70041800");
 #endif
     //argv[2] = _T("u-boot.bin");
     //argv[6] = _T("0xF8006000");//IRAM address
@@ -208,14 +205,13 @@ int _tmain(int argc, TCHAR* argv[], TCHAR* envp[])
                 switch(MxFunc.Task)
                 {
                     case MxHidDevice::INIT:
-                        if(!MxInit(vid,pid,&MxFunc))
-                        {
-                            nRetCode = 3;
-                        }
+                        nRetCode = MxInit(vid,pid,&MxFunc);
                         break;
                     case MxHidDevice::TRANS:
-                    case MxHidDevice::EXEC:
                         nRetCode = MxDownload(vid,pid,fwFilename,DataBuf,fwSize, &MxFunc);
+                        break;
+                    case MxHidDevice::EXEC:
+                        nRetCode = MxExecute(vid,pid,&MxFunc);
                         break;
                     default:
                         break;
@@ -246,6 +242,37 @@ ExitMain:
 	return nRetCode;
 }
 
+int MxExecute(int vid, int pid, MxHidDevice::PMxFunc pMxFunc)
+{
+	CString indent = _T("");
+	int nRetCode = 0;
+	BOOL bRet = FALSE;	
+	//
+	// Find device in HID mode
+	//
+	g_pMxHidDevice = new MxHidDevice();
+	_tprintf(_T("\n%sLooking for a MX HID device within 2 seconds...\n"),indent);
+	bRet = g_pDeviceManager->FindHidDevice(g_pMxHidDevice ,vid,pid, 2);
+	if ( !bRet )
+	{
+		TRACE(__FUNCTION__ " HID device not found.\n");
+		_tprintf(_T("%s  HID device was not found.\n%s Please place the device in recovery mode and restart the program.\n"),indent, indent);
+		nRetCode = 3;
+		return nRetCode;
+
+	} else {
+		TRACE(__FUNCTION__ " HID device found.\n");
+		_tprintf(_T("%s  Found %s.\n"), indent, g_pMxHidDevice->GetUsbDeviceId());
+	}
+
+    if(!g_pMxHidDevice->Execute(pMxFunc->MxTrans.PhyRAMAddr4KRL))
+        return 4;
+
+    TRACE(__FUNCTION__ " Jump to RAM successfully.\n");
+    _tprintf(_T("%s\n********Jump to RAM successfully.**************\n"),indent);
+	return nRetCode;	    
+}
+
 int MxInit(int vid, int pid, MxHidDevice::PMxFunc pMxFunc)
 {
 	CString indent = _T("");
@@ -270,9 +297,10 @@ int MxInit(int vid, int pid, MxHidDevice::PMxFunc pMxFunc)
 	}
 
     if(!g_pMxHidDevice->InitMemoryDevice(pMxFunc->MemType))
-        return FALSE;
+        return 4;
 
     TRACE(__FUNCTION__ " MX device initialized.\n");
+    _tprintf(_T("%s\n********MX device initialized.************\n"),indent);
 	return nRetCode;	
 }
 
@@ -310,19 +338,13 @@ int MxDownload(int vid,int pid,CString fwFilename,UCHAR* DataBuf,ULONGLONG fwSiz
 	if ( !bRet)
 	{
 		TRACE(__FUNCTION__ " ERROR: During download.\n");
-        if(pMxFunc->Task == MxHidDevice::TRANS)
-		    _tprintf(_T("%s  Failed to download %s to the device.\n"),indent, fwFilename);
-        else
-            _tprintf(_T("%s  Failed to run the image %s.\n"),indent, fwFilename);
+		_tprintf(_T("%s  Failed to download %s to the device.\n"),indent, fwFilename);
 		nRetCode = 3;	
 		return nRetCode;
 	}
     else
     {
-        if(pMxFunc->Task == MxHidDevice::TRANS)
-            _tprintf(_T("%s  Succeed to download %s to the device.\n"),indent, fwFilename);
-        else
-            _tprintf(_T("%s  Succeed to run the image %s.\n"),indent, fwFilename);
+        _tprintf(_T("%s\n********Succeed to download %s to the device.********\n"),indent, fwFilename);
     }
 	
 	//g_pDeviceManager->WaitForChange(DeviceManager::DEVICE_REMOVAL_EVT, 10);
@@ -456,7 +478,6 @@ bool ProcessCommandLine(int argc, TCHAR* argv[], CString& fwFilename, ExtendedFu
 		    {
                 pMxFunc->Task = MxHidDevice::EXEC;
                 pMxFunc->MxTrans.PhyRAMAddr4KRL = String2Uint(argv[++i]);
-                pMxFunc->MxTrans.CodeOffset = String2Uint(argv[++i]);
             }
 		}
 	}
