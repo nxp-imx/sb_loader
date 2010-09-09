@@ -1,7 +1,5 @@
 #pragma once
 #include "stdafx.h"
-#include "Common/StdString.h"
-#include "Common/StdInt.h"
 
 #include <basetyps.h>
 #include <setupapi.h>

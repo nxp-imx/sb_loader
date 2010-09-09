@@ -3,7 +3,6 @@
 
 #include "stdafx.h"
 #include "resource.h"
-#include "Common/StdString.h"
 #include <basetyps.h>
 #include <setupapi.h>
 #include <initguid.h>

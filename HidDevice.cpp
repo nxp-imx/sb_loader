@@ -2,7 +2,6 @@
 //
 //////////////////////////////////////////////////////////////////////
 #include "stdafx.h"
-#include "Common/StdString.h"
 #include <Assert.h>
 #include <cfgmgr32.h>
 #include <basetyps.h>
@@ -159,11 +158,11 @@ HANDLE CHidDevice::OpenSpecifiedDevice (
     //	wcscpy_s( devName, bufsize, functionClassDeviceData->DevicePath) ;
     CString devPath = functionClassDeviceData->DevicePath;
 
-	CStdString filter;
+	CString filter;
 	filter.Format(_T("%s#vid_%04x&pid_%04x"), _T("HID"),m_vid, m_pid);
 
     // Is this our vid+pid?  If not, ignore it.
-	if ( (devPath.MakeUpper().Find(filter.ToUpper()) != -1))
+	if ( (devPath.MakeUpper().Find(filter.MakeUpper()) != -1))
     {
         devName = devPath;
         devInst = devInfoData.DevInst;

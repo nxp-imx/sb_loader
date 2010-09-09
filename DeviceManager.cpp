@@ -1,6 +1,5 @@
 #include "stdafx.h"
 #include <Dbt.h>
-#include "Common/StdString.h"
 
 #include <basetyps.h>
 #include <setupapi.h>
