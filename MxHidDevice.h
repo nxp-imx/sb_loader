@@ -30,6 +30,7 @@
 #define ROM_KERNEL_CMD_DCD_WRITE 0x0A0A
 #define ROM_KERNEL_CMD_JUMP_ADDR 0x0B0B
 
+#define MAX_DCD_WRITE_REG_CNT    85
 #define ROM_WRITE_ACK   0x128A8A12
 #define ROM_STATUS_ACK  0x88888888
 #define ROM_JUMP_STATUS_ACK  0x00bbcb90
@@ -180,6 +181,7 @@ private:
         UINT value;
 	}DCD_Item, * PDCD_Item;
 
+	BOOL MxHidDevice::DCDWrite(PUCHAR DataBuf, UINT RegCount);
 	ChipFamily_t GetChipFamily();
     BOOL MxHidDevice::GetCmdAck(UINT RequiredCmdAck);
 	BOOL WriteMemory(UINT address, UINT data, UINT format);
@@ -196,6 +198,10 @@ private:
 	BOOL OpenUSBHandle(HANDLE *pHandle, CString pipePath);
     VOID PackSDPCmd(PSDPCmd pSDPCmd);
     BOOL WriteReg(PSDPCmd pSDPCmd);
+	BOOL MxHidDevice::SendCmd(PSDPCmd pSDPCmd);
+	BOOL MxHidDevice::SendData(const unsigned char * DataBuf, UINT ByteCnt);
+	BOOL MxHidDevice::GetHABType();
+	BOOL MxHidDevice::GetDevAck(UINT RequiredCmdAck);
 	ChipFamily_t _chipFamily;
 	HAB_t _habType;
     //unsigned char _pSDPCmdBuf[SDP_REPORT_LENGTH];
