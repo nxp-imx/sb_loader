@@ -1,4 +1,11 @@
-// HideDevice.h: interface for the CHidDevice class.
+/*
+ * File:	HidDevice.h
+ *
+ * Copyright (c) 2010 Freescale Semiconductor, Inc. All rights reserved.
+ * See included license file for license details.
+*/
+
+// Definition of the CHidDevice class.
 //
 //////////////////////////////////////////////////////////////////////
 #pragma pack(1)

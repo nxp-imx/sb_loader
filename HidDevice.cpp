@@ -1,4 +1,11 @@
-// HidDevice.cpp: implementation of the CHidDevice class.
+/*
+ * File:	HidDevice.cpp
+ *
+ * Copyright (c) 2010 Freescale Semiconductor, Inc. All rights reserved.
+ * See included license file for license details.
+*/
+
+// Implementation of the CHidDevice class.
 //
 //////////////////////////////////////////////////////////////////////
 #include "stdafx.h"
@@ -11,7 +18,7 @@
 #pragma warning( disable : 4201 )
 
 extern "C" {
-    #include "hidsdi.h"
+    #include <hidsdi.h>
 }
 #pragma warning( pop )
 #include "HidDevice.h"

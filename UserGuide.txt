@@ -1,3 +1,10 @@
+/*
+ * File:	UserGuide.txt
+ *
+ * Copyright (c) 2010 Freescale Semiconductor, Inc. All rights reserved.
+ * See included license file for license details.
+*/
+
 The tool is used to download an image to target platform to run. At presetn, the tool supports mx233/28/508 platforms.
 Please run the tool in a command line environment:
 1. Open a command window

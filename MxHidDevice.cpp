@@ -1,3 +1,10 @@
+/*
+ * File:	MxHidDevice.cpp
+ *
+ * Copyright (c) 2010 Freescale Semiconductor, Inc. All rights reserved.
+ * See included license file for license details.
+*/
+
 #pragma once
 #include "stdafx.h"
 
@@ -8,7 +15,7 @@
 #pragma warning( disable : 4201 )
 
 extern "C" {
-    #include "hidsdi.h"
+    #include <hidsdi.h>
 }
 #pragma warning( pop )
 #include "hiddevice.h"
@@ -24,8 +31,8 @@ MxHidDevice::MxHidDevice()
 	//TRACE("************The new i.mx device is initialized**********\n");
 	//TRACE("\n");
 	return;
-Exit:
-	TRACE("Failed to initialize the new i.MX device!!!\n");
+//Exit:
+//	TRACE("Failed to initialize the new i.MX device!!!\n");
 }
 
 MxHidDevice::~MxHidDevice()
@@ -434,7 +441,7 @@ BOOL MxHidDevice::InitMemoryDevice(MemoryType MemType)
     stMemoryInit * pMemPara = (MemType == LPDDR2) ? Mx508LPDDR2 : Mx508MDDR;
     UINT NumMemPara = (MemType == LPDDR2) ? sizeof(Mx508LPDDR2) : sizeof(Mx508MDDR);
 
-    for(int i=0; i<NumMemPara/sizeof(stMemoryInit); i++)
+    for(UINT i=0; i<NumMemPara/sizeof(stMemoryInit); i++)
     {
         SDPCmd.format = pMemPara[i].format;
         SDPCmd.data = pMemPara[i].data;
@@ -467,7 +474,7 @@ BOOL MxHidDevice::Download(UCHAR* pBuffer, ULONGLONG dataCount, PMxFunc pMxFunc)
 	    for ( byteIndex = 0; byteIndex < dataCount; byteIndex += numBytesToWrite )
 	    {
 		    // Get some data
-		    numBytesToWrite = min(MAX_SIZE_PER_DOWNLOAD_COMMAND, dataCount - byteIndex);
+		    numBytesToWrite = (DWORD)min(MAX_SIZE_PER_DOWNLOAD_COMMAND, dataCount - byteIndex);
 
 		    if (!TransData(pMxFunc->MxTrans.PhyRAMAddr4KRL + byteIndex, numBytesToWrite, pBuffer + byteIndex))
 		    {

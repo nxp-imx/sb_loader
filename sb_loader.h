@@ -1,3 +1,10 @@
+/*
+ * File:	sb_loader.h
+ *
+ * Copyright (c) 2010 Freescale Semiconductor, Inc. All rights reserved.
+ * See included license file for license details.
+*/
+
 #define SUCCESS	0
 
 extern DeviceManager* g_pDeviceManager;

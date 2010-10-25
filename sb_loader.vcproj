@@ -42,7 +42,7 @@
 			<Tool
 				Name="VCCLCompilerTool"
 				Optimization="0"
-				AdditionalIncludeDirectories="..\..\;..\;$(WMSDK)\WMDM\inc"
+				AdditionalIncludeDirectories="..\..\;..\;"
 				PreprocessorDefinitions="WIN32;_DEBUG;_CONSOLE"
 				MinimalRebuild="true"
 				BasicRuntimeChecks="3"
@@ -119,7 +119,7 @@
 				Name="VCCLCompilerTool"
 				Optimization="2"
 				EnableIntrinsicFunctions="true"
-				AdditionalIncludeDirectories="..\..\;..\;"
+				AdditionalIncludeDirectories="..\..\;..\;C:\Tools\WinDDK\7600.16385.1\inc\api"
 				PreprocessorDefinitions="WIN32;NDEBUG;_CONSOLE"
 				RuntimeLibrary="0"
 				EnableFunctionLevelLinking="true"
@@ -232,18 +232,6 @@
 				>
 			</File>
 			<File
-				RelativePath=".\hidpi.h"
-				>
-			</File>
-			<File
-				RelativePath=".\hidsdi.h"
-				>
-			</File>
-			<File
-				RelativePath=".\hidusage.h"
-				>
-			</File>
-			<File
 				RelativePath=".\MxHidDevice.h"
 				>
 			</File>
@@ -265,10 +253,6 @@
 			</File>
 			<File
 				RelativePath=".\targetver.h"
-				>
-			</File>
-			<File
-				RelativePath=".\usbiodef.h"
 				>
 			</File>
 		</Filter>

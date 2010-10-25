@@ -1,4 +1,11 @@
-// Sthiddevice.cpp: implementation of the CStHidDevice class.
+/*
+ * File:	StHidDevice.cpp
+ *
+ * Copyright (c) 2010 Freescale Semiconductor, Inc. All rights reserved.
+ * See included license file for license details.
+*/
+
+// Implementation of the CStHidDevice class.
 //
 //////////////////////////////////////////////////////////////////////
 #include "stdafx.h"
@@ -14,7 +21,7 @@
 #pragma warning( disable : 4201 )
 
 extern "C" {
-    #include "hidsdi.h"
+    #include <hidsdi.h>
 }
 #pragma warning( pop )
 #include "HidDevice.h"

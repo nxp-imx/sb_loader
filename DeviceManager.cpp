@@ -1,3 +1,10 @@
+/*
+ * File:	DeviceManager.cpp
+ *
+ * Copyright (c) 2010 Freescale Semiconductor, Inc. All rights reserved.
+ * See included license file for license details.
+*/
+
 #include "stdafx.h"
 #include <Dbt.h>
 
@@ -8,7 +15,7 @@
 #pragma warning( disable : 4201 )
 
 extern "C" {
-    #include "hidsdi.h"
+    #include <hidsdi.h>
 }
 #pragma warning( pop )
 #include "hiddevice.h"
@@ -17,7 +24,7 @@ extern "C" {
 #include "DeviceManager.h"
 #include "sb_loader.h"
 #include <initguid.h>
-#include "usbiodef.h"
+#include <usbiodef.h>
 
 //////////////////////////////////////////////////////////////////////
 //

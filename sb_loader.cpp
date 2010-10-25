@@ -1,4 +1,11 @@
-// sb_loader.cpp : Defines the entry point for the console application.
+/*
+ * File:	sb_loader.cpp
+ *
+ * Copyright (c) 2010 Freescale Semiconductor, Inc. All rights reserved.
+ * See included license file for license details.
+*/
+
+// Defines the entry point for the console application.
 //
 
 #include "stdafx.h"
@@ -10,7 +17,7 @@
 #pragma warning( disable : 4201 )
 
 extern "C" {
-    #include "hidsdi.h"
+    #include <hidsdi.h>
 }
 #pragma warning( pop )
 #include "hiddevice.h"
@@ -403,7 +410,7 @@ UINT String2Uint(CString attr)
     }
     else
     {
-        retVal = _tstoi64(attr);
+        retVal = (UINT)_tstoi64(attr);
     }
     return retVal;
 }

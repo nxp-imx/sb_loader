@@ -1,4 +1,11 @@
-// St.h: interface for the CStHidDevice class.
+/*
+ * File:	StHidDevice.h
+ *
+ * Copyright (c) 2010 Freescale Semiconductor, Inc. All rights reserved.
+ * See included license file for license details.
+*/
+
+// Definition of the CStHidDevice class.
 //
 //////////////////////////////////////////////////////////////////////
 

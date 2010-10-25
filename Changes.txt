@@ -1,5 +1,22 @@
+/*
+ * File:	Changes.txt
+ *
+ * Copyright (c) 2010 Freescale Semiconductor, Inc. All rights reserved.
+ * See included license file for license details.
+*/
+
 
 Changes to sb_loader.exe
+=======================================================================================
+
+1.0  10/25/2010
+
+- Add Open Source license. (see COPYING)
+- Removed Microsoft files and added Freescale copyright to all remaining files.
+- Required changing build environment to latest Windows 7 WDK/SDK. (see Build Requirements.pdf).
+
+
+=======================================================================================
 =======================================================================================
 
 1.0  7/9/2010
@@ -8,7 +25,6 @@ Changes to sb_loader.exe
 
 
 =======================================================================================
-
 =======================================================================================
 
 1.0  5/22/2009

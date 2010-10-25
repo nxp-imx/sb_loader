@@ -1,3 +1,10 @@
+/*
+ * File:	MxHidDevice.h
+ *
+ * Copyright (c) 2010 Freescale Semiconductor, Inc. All rights reserved.
+ * See included license file for license details.
+*/
+
 #ifndef   __MXHIDDEVICE_H__
 #define   __MXHIDDEVICE_H__
 #pragma once
