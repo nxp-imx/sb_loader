@@ -174,12 +174,12 @@ int DeviceManager::ExitInstance()
 }
 
 // Runs in the context of the Client thread.
-bool DeviceManager::FindHidDevice(CHidDevice* pHidDevice,USHORT vid, USHORT pid, int timeout)
+bool DeviceManager::FindHidDevice(CHidDevice* pHidDevice,int timeout)
 {
     ATLTRACE(_T("+DeviceManager::FindHidDevice()\n"));
 	bool bRet = TRUE;
 	
-	if ( pHidDevice->FindKnownHidDevices(vid, pid) == ERROR_SUCCESS )
+	if ( pHidDevice->FindKnownHidDevices() == ERROR_SUCCESS )
 		return TRUE;
 
     //
@@ -208,7 +208,7 @@ bool DeviceManager::FindHidDevice(CHidDevice* pHidDevice,USHORT vid, USHORT pid,
 
     HANDLE waitHandles[2] = { _hChangeEvent, hTimer };
     DWORD waitResult;
-    while( pHidDevice->FindKnownHidDevices(vid, pid) != ERROR_SUCCESS )
+    while( pHidDevice->FindKnownHidDevices() != ERROR_SUCCESS )
     {
 
         waitResult = MsgWaitForMultipleObjects(2, &waitHandles[0], false, INFINITE, 0);

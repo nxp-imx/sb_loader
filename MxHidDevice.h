@@ -55,6 +55,12 @@
 #define IVT_BARKER_HEADER      0x402000D1
 #define ROM_TRANSFER_SIZE	   0x400
 
+#define FLASH_HEADER_SIZE	   0x20
+#define ROM_TRANSFER_SIZE	   0x400
+#define DCD_BARKER_CODE        0xB17219E9
+#define IRAM_START_ADDRESS     0xF8000000
+#define IVT_OFFSET             0x400
+
 
 // Address ranges for Production parts: 
 
@@ -98,16 +104,17 @@ public:
 		else return MemAction_None;
 	}
     
-    enum MemoryType {LPDDR2, MDDR};
+    enum MemoryType {LPDDR2_V3, LPDDR2, MDDR};
 
 	typedef struct _MxTrans
 	{
         BOOL HasFlashHeader;
         UINT PhyRAMAddr4KRL;
+		UINT ExecutingAddr;
         UINT CodeOffset;
 	}MxTrans, * PMxTrans;
 
-    enum eTask {INIT, TRANS, EXEC};
+    enum eTask {INIT = 1, TRANS, EXEC, RUN, RUN_PLUGIN};
 	typedef struct _MxFunc
 	{
         eTask Task;
@@ -119,7 +126,8 @@ public:
 	{
            unsigned long IvtBarker;
            unsigned long ImageStartAddr;// LONG(0x70004020)
-           unsigned long Reserved[3];
+           unsigned long Reserved[2];
+           unsigned long BootData;// LONG(0x70004000)
            unsigned long SelfAddr;// LONG(0x70004000)
            unsigned long Reserved2[2];
 	}IvtHeader, *PIvtHeader;
@@ -138,6 +146,7 @@ public:
 	//BOOL ProgramFlash(std::ifstream& file, UINT address, UINT cmdID, UINT flags, Device::UI_Callback callback);
 	BOOL Download(UCHAR* pBuffer, ULONGLONG dataCount, PMxFunc pMxFunc);
     BOOL Execute(UINT32 ImageStartAddr);
+	BOOL MxHidDevice::RunPlugIn(UCHAR* pBuffer, ULONGLONG dataCount, PMxFunc pMxFunc);
 	//BOOL Reset();
 
 	// PROPERTIES

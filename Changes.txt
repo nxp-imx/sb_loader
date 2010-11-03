@@ -9,11 +9,27 @@
 Changes to sb_loader.exe
 =======================================================================================
 
+1.1  11/09/2010
+
+- Support plugin functionality in SDP mode, which eliminates the need of memory initialization table.
+
+
+=======================================================================================
+=======================================================================================
+
 1.0  10/25/2010
 
 - Add Open Source license. (see COPYING)
 - Removed Microsoft files and added Freescale copyright to all remaining files.
 - Required changing build environment to latest Windows 7 WDK/SDK. (see Build Requirements.pdf).
+
+
+=======================================================================================
+=======================================================================================
+
+1.1  09/09/2010
+
+- Speed up i.mx50 DDR memory initialization by using DCD_WRITE method, instead of Write_reg way.
 
 
 =======================================================================================

@@ -51,6 +51,11 @@ CHidDevice::~CHidDevice()
 	Trash();
 }
 
+DeviceType	CHidDevice::GetDevType()
+{
+	return m_DevType;
+}
+
 int CHidDevice::Trash()
 {
     if( m_sync_event_tx != NULL )
@@ -166,11 +171,37 @@ HANDLE CHidDevice::OpenSpecifiedDevice (
     CString devPath = functionClassDeviceData->DevicePath;
 
 	CString filter;
-	filter.Format(_T("%s#vid_%04x&pid_%04x"), _T("HID"),m_vid, m_pid);
+	BOOL DeviceFound = FALSE;
+	DWORD DevType;
+	for(DevType = MX23; DevType < NoDev;  DevType += 1)
+	{
+		switch (DevType)
+		{
+			case MX23:
+				filter.Format(_T("%s#vid_%04x&pid_%04x"), _T("HID"),MX23_USB_VID, MX23_USB_PID);
+				break;
+			case MX28:
+				filter.Format(_T("%s#vid_%04x&pid_%04x"), _T("HID"),MX28_USB_VID, MX28_USB_PID);
+				break;
+			case MX50:
+				filter.Format(_T("%s#vid_%04x&pid_%04x"), _T("HID"),MX50_USB_VID, MX50_USB_PID);
+				break;
+			default:
+				filter.Format(_T("%s#vid_%04x&pid_%04x"), _T("HID"),0xFFFF, 0xFFFF);
+				break;
+		}
 
-    // Is this our vid+pid?  If not, ignore it.
-	if ( (devPath.MakeUpper().Find(filter.MakeUpper()) != -1))
+		if(devPath.MakeUpper().Find(filter.MakeUpper()) != -1 )
+		{
+			DeviceFound = TRUE;
+			break;
+		}
+	}
+
+    // Is this our vid?  If not, ignore it.
+	if ( DeviceFound)
     {
+		m_DevType = (DeviceType)DevType;
         devName = devPath;
         devInst = devInfoData.DevInst;
 
@@ -183,7 +214,7 @@ HANDLE CHidDevice::OpenSpecifiedDevice (
             0, // No special attributes
             NULL); // No template file
     } else {
-        TRACE(__FUNCTION__ " VID-PID does not match\n");
+        TRACE(__FUNCTION__ " VID does not match\n");
     }
 
     free( functionClassDeviceData );
@@ -392,11 +423,8 @@ int CHidDevice::AllocateIoBuffers()
     return ERROR_SUCCESS;
 }
 
-int CHidDevice::FindKnownHidDevices(USHORT vid, USHORT pid)
+int CHidDevice::FindKnownHidDevices()
 {
-    m_vid = vid;
-	m_pid = pid;
-
     CString devpath;
     DWORD dwDevInst = 0;
     int err = ERROR_SUCCESS;

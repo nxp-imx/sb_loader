@@ -9,6 +9,16 @@
 //
 //////////////////////////////////////////////////////////////////////
 #pragma pack(1)
+//MX508
+#define MX50_USB_VID 0x15A2
+#define MX50_USB_PID 0x0052
+//MX23
+#define MX23_USB_VID 0x066f
+#define MX23_USB_PID 0x3780
+//MX28
+#define MX28_USB_VID 0x15A2
+#define MX28_USB_PID 0x004f
+enum DeviceType {MX23=0,MX28,MX50,NoDev};
 
 struct _HID_DATA_REPORT
 {
@@ -28,7 +38,7 @@ public:
         return (p[0]<<24) + (p[1]<<16) + (p[2]<<8) + p[3];
     }
 
-    int FindKnownHidDevices(USHORT vid, USHORT pid);
+    int FindKnownHidDevices();
     int Read(void* buf, UINT size);
     int Write(UCHAR* buf, ULONG size);
     CString GetUsbDeviceId() { return m_usb_device_id; }
@@ -47,11 +57,14 @@ public:
     CString			m_usb_device_id;
 	USHORT          m_vid;
 	USHORT          m_pid;
+	DeviceType		m_DevType;
     static HANDLE	m_sync_event_tx;	
     static HANDLE	m_sync_event_rx;
     HIDP_CAPS		m_Capabilities;
     _HID_DATA_REPORT		*m_pReadReport;
     _HID_DATA_REPORT		*m_pWriteReport;
+
+	DeviceType	GetDevType();
 
 private:
     int Close();

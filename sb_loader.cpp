@@ -1,11 +1,4 @@
-/*
- * File:	sb_loader.cpp
- *
- * Copyright (c) 2010 Freescale Semiconductor, Inc. All rights reserved.
- * See included license file for license details.
-*/
-
-// Defines the entry point for the console application.
+// sb_loader.cpp : Defines the entry point for the console application.
 //
 
 #include "stdafx.h"
@@ -17,7 +10,7 @@
 #pragma warning( disable : 4201 )
 
 extern "C" {
-    #include <hidsdi.h>
+    #include "hidsdi.h"
 }
 #pragma warning( pop )
 #include "hiddevice.h"
@@ -32,63 +25,15 @@ extern "C" {
 #define new DEBUG_NEW
 #endif
 
-//#define PRE_DEF
-//#define INIT_MODE
-//#define TRAN_MODE
-//#define EXEC_MODE
-//MX508
-#define MX508_USB_VID 0x15A2
-#define MX508_USB_PID 0x0052
-//MX23
-#define MX23_USB_VID 0x066f
-#define MX23_USB_PID 0x3780
-//MX28
-#define MX28_USB_VID 0x15A2
-#define MX28_USB_PID 0x004f
+
 // The one and only application object
 
 CWinApp theApp;
 DeviceManager* g_pDeviceManager = NULL;
 CStHidDevice* g_pHidDevice = NULL;
 MxHidDevice* g_pMxHidDevice = NULL;
-// Global Options
-//CString	g_IniFilename = _T("sb_loader.ini");
-//CString	g_LogFilename = _T("sb_loader.log");
-//FILE *	g_pLogHndl = NULL;
-
-// These values are shared between UI and Packet Driver
-//unsigned int g_uDiscardedBytes      =0; // bytes tossed
-//unsigned int g_uPacketsFromTarget   =0; // packets read from target
-//unsigned int g_uPacketsToTarget     =0; // packets sent to target
-//unsigned int g_uRouteDiscard        =0; // bool (do we route discarded)
-//unsigned int g_DiscardPort          =0; // port associated with stream 0
 
 using namespace std;
-
-/*int ReadFile(CString fwFilename, UCHAR* DataBuf)
-{
-	//
-		// Get data
-		//
-		if ( fwFile.Open(fwFilename, CFile::modeRead | CFile::shareDenyWrite) == 0 )
-		{
-			TRACE(__FUNCTION__ " firmware file failed to open.\n");
-			_tprintf(_T("%sFirmware file %s failed to open.errcode is %d\n"), indent, fwFilename,GetLastError());
-			return FALSE;
-		}
-
-		UINT fwSize = fwFile.GetLength();
-		DataBuf = (UCHAR*)malloc((size_t)fwSize);
-		fwFile.Read(DataBuf, (UINT)fwSize);
-		fwFile.Close();
-
-        return fwSize;
-}
-
-bool closefile(UCHAR* DataBuf)
-{
-    free(DataBuf);
-}*/
 
 int _tmain(int argc, TCHAR* argv[], TCHAR* envp[])
 {
@@ -105,43 +50,6 @@ int _tmain(int argc, TCHAR* argv[], TCHAR* envp[])
     MxHidDevice::MxFunc MxFunc;
 
     ZeroMemory(&MxFunc, sizeof(MxFunc));
-
-	int vid=0,pid=0;
-#ifdef PRE_DEF
-	argv[0] = _T("sb_loader");
-	argv[1] = _T("-imx508");
-#endif
-
-#ifdef INIT_MODE
-	argc = 4;
-    argv[2] = _T("-init");
-    argv[3] = _T("MDDR");
-#endif
-#ifdef TRAN_MODE    
-    argc = 6;
-    argv[2] = _T("-trans");
-    argv[3] = _T("0x70040000");
-    argv[4] = _T("/f");
-    argv[5] = _T("eboot.nb0");
-#endif
-#ifdef EXEC_MODE
-    argc = 4;
-    argv[2] = _T("-exec");
-    argv[3] = _T("0x70041800");
-#endif
-    //argv[2] = _T("u-boot.bin");
-    //argv[6] = _T("0xF8006000");//IRAM address
-    //argv[6] = _T("0x77800000");
-    //argv[7] = _T("0x00");
-    //argv[8] = _T("LPDDR2");
-
-	/*argv[2] = _T("eboot.nb0");
-    argv[6] = _T("0x70040000");
-    argv[7] = _T("0x00");*/
-
-    /*argv[2] = _T("xldr.nb0");
-    argv[6] = _T("0xF8008000");
-    argv[7] = _T("0x400");*/
 
 
 	// initialize MFC and print and error on failure
@@ -182,42 +90,57 @@ int _tmain(int argc, TCHAR* argv[], TCHAR* envp[])
         }
 
 		
-		//
+		// 
 		// Prepare the DeviceManager object for use. 
 		// Note: We must call gDeviceManager::Instance().Close() before the app exits.
 		g_pDeviceManager = new DeviceManager();
 		VERIFY(g_pDeviceManager->Open() == ERROR_SUCCESS);
 
-		switch(DevType)
+		if(!SearchDevice())
+			goto ExitMain;
+
+		switch(g_pHidDevice->GetDevType())
 		{
 		case MX23:
-			{
-				vid = MX23_USB_VID;
-				pid = MX23_USB_PID;
-				nRetCode = StDownload(vid,pid,fwFilename,DataBuf,fwSize);
-			}
-			break;
 		case MX28:
 			{
-				vid = MX28_USB_VID;
-				pid = MX28_USB_PID;
-				nRetCode = StDownload(vid,pid,fwFilename,DataBuf,fwSize);
+				nRetCode = StDownload(fwFilename,DataBuf,fwSize);
 			}
 			break;
-		case MX508:
+		case MX50:
 			{
-				vid = MX508_USB_VID;
-				pid = MX508_USB_PID;
                 switch(MxFunc.Task)
                 {
                     case MxHidDevice::INIT:
-                        nRetCode = MxInit(vid,pid,&MxFunc);
+						if(!g_pMxHidDevice->InitMemoryDevice(MxFunc.MemType))
+							nRetCode = 5;
+
+						TRACE(__FUNCTION__ " MX device initialized.\n");
+						_tprintf(_T("%sMX device initialized.\n"),indent);
                         break;
                     case MxHidDevice::TRANS:
-                        nRetCode = MxDownload(vid,pid,fwFilename,DataBuf,fwSize, &MxFunc);
+						if ( !g_pMxHidDevice->Download(DataBuf, fwSize, &MxFunc))
+						{
+							TRACE(__FUNCTION__ " ERROR: During download.\n");
+							_tprintf(_T("%s  Failed to download %s to the device.\n"),indent, fwFilename);
+							nRetCode = 3;	
+							return nRetCode;
+						}
+						else
+						{
+							_tprintf(_T("%sSucceeded to download %s to the device.\n"),indent, fwFilename);
+						}
                         break;
                     case MxHidDevice::EXEC:
-                        nRetCode = MxExecute(vid,pid,&MxFunc);
+                        if(!g_pMxHidDevice->Execute(MxFunc.MxTrans.PhyRAMAddr4KRL))
+							nRetCode = 4;
+	
+						TRACE(__FUNCTION__ " Jump to RAM successfully.\n");
+						_tprintf(_T("%sJump to RAM successfully.\n"),indent);
+                        break;
+                    case MxHidDevice::RUN_PLUGIN:
+                    case MxHidDevice::RUN:
+                        nRetCode = MxRun(fwFilename,DataBuf,fwSize, &MxFunc);
                         break;
                     default:
                         break;
@@ -248,98 +171,58 @@ ExitMain:
 	return nRetCode;
 }
 
-int MxExecute(int vid, int pid, MxHidDevice::PMxFunc pMxFunc)
+BOOL SearchDevice()
 {
-	CString indent = _T("");
-	int nRetCode = 0;
 	BOOL bRet = FALSE;	
-	//
-	// Find device in HID mode
-	//
-	g_pMxHidDevice = new MxHidDevice();
-	_tprintf(_T("\n%sLooking for a MX HID device within 2 seconds...\n"),indent);
-	bRet = g_pDeviceManager->FindHidDevice(g_pMxHidDevice ,vid,pid, 2);
+	//_tprintf(_T("\nLooking for a Freescale HID device within 2 seconds...\n"));
+
+	g_pHidDevice = new CStHidDevice();
+	bRet = g_pDeviceManager->FindHidDevice(g_pHidDevice ,2);
+	
 	if ( !bRet )
 	{
 		TRACE(__FUNCTION__ " HID device not found.\n");
-		_tprintf(_T("%s  HID device was not found.\n%s Please place the device in recovery mode and restart the program.\n"),indent, indent);
-		nRetCode = 3;
-		return nRetCode;
-
-	} else {
-		TRACE(__FUNCTION__ " HID device found.\n");
-		_tprintf(_T("%s  Found %s.\n"), indent, g_pMxHidDevice->GetUsbDeviceId());
+		_tprintf(_T("HID device was not found.\n Please place the device in recovery mode and restart the program.\n"));
+		return FALSE;
 	}
 
-    if(!g_pMxHidDevice->Execute(pMxFunc->MxTrans.PhyRAMAddr4KRL))
-        return 4;
+	if(g_pHidDevice->GetDevType() == MX50)
+	{
+		g_pMxHidDevice = new MxHidDevice();
+		g_pDeviceManager->FindHidDevice(g_pMxHidDevice, 2);
+	}
 
-    TRACE(__FUNCTION__ " Jump to RAM successfully.\n");
-    _tprintf(_T("%s\n********Jump to RAM successfully.**************\n"),indent);
-	return nRetCode;	    
+	TRACE(__FUNCTION__ "Freescale HID device found.\n");
+	//_tprintf(_T("Found %s.\n"), g_pMxHidDevice->GetUsbDeviceId());
+
+	return TRUE;
 }
 
-int MxInit(int vid, int pid, MxHidDevice::PMxFunc pMxFunc)
+int MxRun(CString fwFilename,UCHAR* DataBuf,ULONGLONG fwSize, MxHidDevice::PMxFunc pMxFunc)
 {
 	CString indent = _T("");
 	int nRetCode = 0;
 	BOOL bRet = FALSE;	
+
 	//
-	// Find device in HID mode
+	// Execute plugin
 	//
-	g_pMxHidDevice = new MxHidDevice();
-	_tprintf(_T("\n%sLooking for a MX HID device within 2 seconds...\n"),indent);
-	bRet = g_pDeviceManager->FindHidDevice(g_pMxHidDevice ,vid,pid, 2);
-	if ( !bRet )
+    bRet = g_pMxHidDevice->RunPlugIn(DataBuf, fwSize, pMxFunc);
+	if ( !bRet)
 	{
-		TRACE(__FUNCTION__ " HID device not found.\n");
-		_tprintf(_T("%s  HID device was not found.\n%s Please place the device in recovery mode and restart the program.\n"),indent, indent);
-		nRetCode = 3;
+		TRACE(__FUNCTION__ " ERROR: During RunPlugIn.\n");
+		_tprintf(_T("%s  Failed to run plugin %s to the device.\n"),indent, fwFilename);
+		nRetCode = 3;	
 		return nRetCode;
-
-	} else {
-		TRACE(__FUNCTION__ " HID device found.\n");
-		_tprintf(_T("%s  Found %s.\n"), indent, g_pMxHidDevice->GetUsbDeviceId());
 	}
-
-    if(!g_pMxHidDevice->InitMemoryDevice(pMxFunc->MemType))
-        return 4;
-
-    TRACE(__FUNCTION__ " MX device initialized.\n");
-    _tprintf(_T("%s\n********MX device initialized.************\n"),indent);
-	return nRetCode;	
-}
-
-int MxDownload(int vid,int pid,CString fwFilename,UCHAR* DataBuf,ULONGLONG fwSize, MxHidDevice::PMxFunc pMxFunc)
-{
-	CString indent = _T("");
-	int nRetCode = 0;
-	BOOL bRet = FALSE;	
-	//
-	// Find device in HID mode
-	//
-	g_pMxHidDevice = new MxHidDevice();
-	_tprintf(_T("\n%sLooking for a MX HID device within 2 seconds...\n"),indent);
-	bRet = g_pDeviceManager->FindHidDevice(g_pMxHidDevice ,vid,pid, 2);
-	if ( !bRet )
-	{
-		TRACE(__FUNCTION__ " HID device not found.\n");
-		_tprintf(_T("%s  HID device was not found.\n%s Please place the device in recovery mode and restart the program.\n"),indent, indent);
-		nRetCode = 3;
-		return nRetCode;
-
-	} else {
-		TRACE(__FUNCTION__ " HID device found.\n");
-		_tprintf(_T("%s  Found %s.\n"), indent, g_pMxHidDevice->GetUsbDeviceId());
-	}
-
+    else
+    {
+		TRACE(__FUNCTION__ " Executed plugin successfully.\n");
+		_tprintf(_T("%s\nExecuted plugin successfully.\n"),indent);
+    }
 	//
 	// Load firmware
 	//
-    if(pMxFunc->Task == MxHidDevice::TRANS)
-	    _tprintf(_T("%sDownloading %s to device.\n"), indent, fwFilename);
-	//bRet = g_pMxHidDevice->Download(DataBuf, fwSize, TRUE, 0x90041000, 0x400);
-    //bRet = g_pMxHidDevice->Download(DataBuf, fwSize, TRUE, 0x90040000, 0x00);
     bRet = g_pMxHidDevice->Download(DataBuf, fwSize, pMxFunc);
 	if ( !bRet)
 	{
@@ -350,36 +233,32 @@ int MxDownload(int vid,int pid,CString fwFilename,UCHAR* DataBuf,ULONGLONG fwSiz
 	}
     else
     {
-        _tprintf(_T("%s\n********Succeed to download %s to the device.********\n"),indent, fwFilename);
+        _tprintf(_T("%sSucceed to download %s to the device.\n"),indent, fwFilename);
     }
 	
-	//g_pDeviceManager->WaitForChange(DeviceManager::DEVICE_REMOVAL_EVT, 10);
+	if(pMxFunc->Task != MxHidDevice::RUN_PLUGIN)
+	{
+		if(!g_pMxHidDevice->Execute(pMxFunc->MxTrans.ExecutingAddr))
+		{
+			TRACE(__FUNCTION__ " ERROR: During RunPlugIn.\n");
+			_tprintf(_T("%s  Failed to run plugin %s to the device.\n"),indent, fwFilename);
+			nRetCode = 3;	
+			return nRetCode;
+		}
+
+		TRACE(__FUNCTION__ " Jump to RAM successfully.\n");
+		_tprintf(_T("%sRun into the image successfully.\n"),indent);
+	}
 
 	return nRetCode;	
 }
 
-int StDownload(int vid,int pid,CString fwFilename,UCHAR* DataBuf,ULONGLONG fwSize)
+
+int StDownload(CString fwFilename,UCHAR* DataBuf,ULONGLONG fwSize)
 {
 	CString indent = _T("");
 	int nRetCode = 0;
 	BOOL bRet = FALSE;
-	//
-	// Find device in HID mode
-	//
-	g_pHidDevice = new CStHidDevice();
-	_tprintf(_T("\n%sLooking for a STMP HID device within 2 seconds...\n"),indent);
-	bRet = g_pDeviceManager->FindHidDevice(g_pHidDevice ,vid,pid, 10);
-	if ( !bRet )
-	{
-		TRACE(__FUNCTION__ " HID device not found.\n");
-		_tprintf(_T("%s  HID device was not found.\n%s Please place the device in recovery mode and restart the program.\n"),indent, indent);
-		nRetCode = 3;
-		return nRetCode;
-
-	} else {
-		TRACE(__FUNCTION__ " HID device found.\n");
-		_tprintf(_T("%s  Found %s.\n"), indent, g_pHidDevice->GetUsbDeviceId());
-	}
 
 	//
 	// Load firmware
@@ -410,7 +289,7 @@ UINT String2Uint(CString attr)
     }
     else
     {
-        retVal = (UINT)_tstoi64(attr);
+        retVal = _tstoi(attr);
     }
     return retVal;
 }
@@ -432,59 +311,55 @@ bool ProcessCommandLine(int argc, TCHAR* argv[], CString& fwFilename, ExtendedFu
 	{
 		arg = argv[i];
 
-		if ( arg.CompareNoCase(_T("/tss")) == 0 )
+		if ( arg.CompareNoCase(_T("/tss")) == 0 || arg.CompareNoCase(_T("-tss")) == 0 )
 		{
 			function = CaptureTssFunction;
 		}
-		else if ( arg.CompareNoCase(_T("/f")) == 0 && i <= argc-1 )
+		else if ( (arg.CompareNoCase(_T("/f")) == 0 || arg.CompareNoCase(_T("-f")) == 0) && i <= argc-1 )
 		{
 			fwFilename = argv[++i];
 		}
-		else if ( arg.Compare(_T("/?")) == 0 || arg.CompareNoCase(_T("/h")) == 0 )
+		else if ( arg.Compare(_T("/?")) == 0 || arg.CompareNoCase(_T("/h")) == 0 ||arg.CompareNoCase(_T("-h")) == 0 )
 		{
 			PrintUsage();
 			ret = false;
 		}
-		else if ( arg.CompareNoCase(_T("/v")) == 0 )
+		else if ( arg.CompareNoCase(_T("/v")) == 0 || arg.CompareNoCase(_T("-v")) == 0)
 		{
-			_tprintf(_T("version 0.2 build %s"), _T(__DATE__));
+			_tprintf(_T("version 1.0 build %s"), _T(__DATE__));
 			ret = false;
 		}
-		else if(arg.CompareNoCase(_T("-imx23")) == 0)
-		{
-			*DevType = MX23;			
-		}
-		else if(arg.CompareNoCase(_T("-imx28")) == 0)
-		{
-			*DevType = MX28;
-		}
-		else if(arg.CompareNoCase(_T("-imx508")) == 0)
-		{
-			*DevType = MX508;
+	    else if ( arg.CompareNoCase(_T("-init")) == 0 && i <= argc-1 )
+	    {
+            pMxFunc->Task = MxHidDevice::INIT;
             arg = argv[++i];
-		    if ( arg.CompareNoCase(_T("-init")) == 0 && i <= argc-1 )
-		    {
-                pMxFunc->Task = MxHidDevice::INIT;
-                arg = argv[++i];
-		        if(arg.CompareNoCase(_T("LPDDR2")) == 0)
-		        {
-                    pMxFunc->MemType = MxHidDevice::LPDDR2;
-		        }
-                else
-		        {
-                    pMxFunc->MemType = MxHidDevice::MDDR;
-		        }
-		    }
-		    else if ( arg.CompareNoCase(_T("-trans")) == 0 && i <= argc-1 )
-		    {
-                pMxFunc->Task = MxHidDevice::TRANS;
-                pMxFunc->MxTrans.PhyRAMAddr4KRL = String2Uint(argv[++i]);
-            }
-		    else if ( arg.CompareNoCase(_T("-exec")) == 0 && i <= argc-1 )
-		    {
-                pMxFunc->Task = MxHidDevice::EXEC;
-                pMxFunc->MxTrans.PhyRAMAddr4KRL = String2Uint(argv[++i]);
-            }
+	        if(arg.CompareNoCase(_T("LPDDR2_V3")) == 0)
+	        {
+                pMxFunc->MemType = MxHidDevice::LPDDR2_V3;
+	        }
+	    }
+	    else if ( arg.CompareNoCase(_T("-trans")) == 0 && i <= argc-1 )
+	    {
+            pMxFunc->Task = MxHidDevice::TRANS;
+            pMxFunc->MxTrans.PhyRAMAddr4KRL = String2Uint(argv[++i]);
+        }
+	    else if ( arg.CompareNoCase(_T("-exec")) == 0 && i <= argc-1 )
+	    {
+            pMxFunc->Task = MxHidDevice::EXEC;
+            pMxFunc->MxTrans.PhyRAMAddr4KRL = String2Uint(argv[++i]);
+        }
+		else if ( arg.CompareNoCase(_T("-nojump")) == 0 && i <= argc-1 ) 
+	    {
+            pMxFunc->Task = MxHidDevice::RUN_PLUGIN;
+        }
+		else if(1 < argc)
+	    {
+            pMxFunc->Task = MxHidDevice::RUN;
+        }
+		else
+		{
+			PrintUsage();
+			ret = false;
 		}
 	}
 
@@ -494,10 +369,16 @@ bool ProcessCommandLine(int argc, TCHAR* argv[], CString& fwFilename, ExtendedFu
 void PrintUsage()
 {
 	CString usage =
-		_T("\nUsage: sb_loader.exe [/f <filename>] [/tss] [/? | /h]\n\n") \
-		_T("\t/f <filename> - where <filename> is the file to download. Default: \"firmware.sb\"\n") \
-		_T("\t/tss - captures and prints the TSS output after the file is downloaded.\n") \
-		_T("\t/? or /h - displays this screen.\n\n");
+		_T("\nUsage: sb_loader.exe [/f <filename>] [/tss] [/? | /h]\n\n\n") \
+		_T("\t-f or /f <filename> - where <filename> is the file to download. Default: \"firmware.sb\"\n\n") \
+		_T("\t-tss or /tss - captures and prints the TSS output after the file is downloaded.\n\n") \
+		_T("\t-h or /h - displays this screen.\n\n") \
+		_T("\t-nojump - Load but don't execute the image in which plugin is contained to RAM. Only available for mx50.\n\n") \
+		_T("\t-trans - Load the image to RAM, the target address must be followed. Only available for mx50.\n\n") \
+		_T("\t-exec - Execute the image, the execution address must be followed. Only available for mx50.\n\n") \
+		_T("\t-init - initialize RAM by using the settings defined in memoryinit.h. Only available for mx50.\n\n") \
+		_T("\tbelow instance download and run an image:\n") \
+		_T("\tsb_loader -f uboot.bin\n\n");
 
 	_tprintf(usage);
 }
@@ -517,7 +398,7 @@ int CaptureTss(CString indent)
 	//
 	// Find device in HID mode
 	//
-	g_pDeviceManager->FindHidDevice(g_pHidDevice,0x15a2, 0xff03, 10);
+	g_pDeviceManager->FindHidDevice(g_pHidDevice,10);
 	if ( g_pHidDevice == NULL )
 	{
 		error = ERROR_BAD_UNIT;

@@ -47,7 +47,7 @@ public:
 		return _ICancelAutoPlayCallbackObject.SetCancelAutoPlay(rejectAutoPlay, driveList);
 	};
 
-	bool FindHidDevice(CHidDevice* pHidDevice,USHORT vid, USHORT pid, int timeout);
+	bool FindHidDevice(CHidDevice* pHidDevice,int timeout);
 	bool WaitForChange(DevChangeEvent eventType, int timeout);
 	CString GetEventString(DevChangeEvent eventType);
 

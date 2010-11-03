@@ -14,6 +14,7 @@ extern "C" {
 #include "MxHidDevice.h"
 #include "MemoryInit.h"
 
+
 #define DCD_WRITE
 
 MxHidDevice::MxHidDevice()
@@ -230,8 +231,12 @@ BOOL MxHidDevice::DCDWrite(PUCHAR DataBuf, UINT RegCount)
 
 BOOL MxHidDevice::InitMemoryDevice(MemoryType MemType)
 {
-	stMemoryInit * pMemPara = (MemType == LPDDR2) ? Mx508LPDDR2 : Mx508MDDR;
-    UINT RegCount = (MemType == LPDDR2) ? sizeof(Mx508LPDDR2) : sizeof(Mx508MDDR);
+	stMemoryInit * pMemPara;
+    UINT RegCount;
+
+	pMemPara = Mx50_LPDDR2;
+	RegCount = sizeof(Mx50_LPDDR2);
+
 	RegCount = RegCount/sizeof(stMemoryInit);
 
     if ( !DCDWrite((PUCHAR)pMemPara,RegCount) )
@@ -239,37 +244,76 @@ BOOL MxHidDevice::InitMemoryDevice(MemoryType MemType)
         _tprintf(_T("Failed to initialize memory!\r\n"));
         return FALSE;
     }
-    _tprintf(_T("Succeeded to initialize memory!\r\n"));
 
 	return TRUE;
 }
 #endif
 
-#define FLASH_HEADER_SIZE	0x20
-#define ROM_TRANSFER_SIZE	0x400
-#define DCD_BARKER_CODE     0xB17219E9
+
+BOOL MxHidDevice::RunPlugIn(UCHAR* pBuffer, ULONGLONG dataCount, PMxFunc pMxFunc)
+{
+	DWORD * pPlugIn = (DWORD *)pBuffer;
+	DWORD PlugInDataOffset;
+	DWORD BootDataImgAddrIndex;
+	PIvtHeader pIVT = NULL,pIVT2 = NULL;
+
+	//Search for IVT
+	DWORD ImgIVTOffset=0;
+	while(pPlugIn[ImgIVTOffset/sizeof(DWORD)] != IVT_BARKER_HEADER || ImgIVTOffset >= dataCount)
+		ImgIVTOffset+= 0x100;
+	
+	if(ImgIVTOffset >= dataCount)
+		return FALSE;
+
+	pIVT = (PIvtHeader) (pPlugIn + ImgIVTOffset/sizeof(DWORD));
+	DWORD IVT2Offset = ImgIVTOffset + sizeof(IvtHeader);
+
+	while(pPlugIn[IVT2Offset/sizeof(DWORD)] != IVT_BARKER_HEADER || IVT2Offset >= dataCount)
+		IVT2Offset+= sizeof(DWORD);
+	
+	if(IVT2Offset >= dataCount)
+		return FALSE;
+
+	pIVT2 = (PIvtHeader)(pPlugIn + IVT2Offset/sizeof(DWORD));
+
+	BootDataImgAddrIndex = (pIVT2->BootData - pIVT2->SelfAddr)/sizeof(DWORD);
+	BootDataImgAddrIndex += (DWORD *)pIVT2 - pPlugIn;
+	pMxFunc->MxTrans.PhyRAMAddr4KRL = pPlugIn[BootDataImgAddrIndex] + IVT_OFFSET - ImgIVTOffset;
+
+	pMxFunc->MxTrans.ExecutingAddr = pIVT2->ImageStartAddr;
+	DWORD PlugInAddr = pIVT->ImageStartAddr;
+	PlugInDataOffset = pIVT->ImageStartAddr - pIVT->SelfAddr;
+
+	if (!TransData(PlugInAddr, 0x1000, (PUCHAR)((DWORD)pIVT + PlugInDataOffset)))
+	{
+		TRACE(_T("DownloadImage(): TransData(0x%X, 0x%X,0x%X) failed.\n"), \
+			PlugInAddr, dataCount, pBuffer);
+		return FALSE;
+	}
+
+	if(!Execute(PlugInAddr))
+		return FALSE;
+
+    return TRUE;
+}
+
 BOOL MxHidDevice::Download(UCHAR* pBuffer, ULONGLONG dataCount, PMxFunc pMxFunc)
 {
-    //return FALSE;
-    MemorySection loadSection = MemSectionOTH;
-    MemorySection setSection = MemSectionAPP;
-
     //if(pMxFunc->Task == TRANS)
+	DWORD byteIndex, numBytesToWrite = 0;
+	for ( byteIndex = 0; byteIndex < dataCount; byteIndex += numBytesToWrite )
+	{
+		// Get some data
+		numBytesToWrite = min(MAX_SIZE_PER_DOWNLOAD_COMMAND, dataCount - byteIndex);
 
-	    DWORD byteIndex, numBytesToWrite = 0;
-	    for ( byteIndex = 0; byteIndex < dataCount; byteIndex += numBytesToWrite )
-	    {
-		    // Get some data
-		    numBytesToWrite = min(MAX_SIZE_PER_DOWNLOAD_COMMAND, dataCount - byteIndex);
-
-		    if (!TransData(pMxFunc->MxTrans.PhyRAMAddr4KRL + byteIndex, numBytesToWrite, pBuffer + byteIndex))
-		    {
-			    TRACE(_T("DownloadImage(): TransData(0x%X, 0x%X,0x%X) failed.\n"), \
-                    pMxFunc->MxTrans.PhyRAMAddr4KRL + byteIndex, numBytesToWrite, pBuffer + byteIndex);
-			    return FALSE;
-		    }
-	    }
-        return TRUE;
+		if (!TransData(pMxFunc->MxTrans.PhyRAMAddr4KRL + byteIndex, numBytesToWrite, pBuffer + byteIndex))
+		{
+			TRACE(_T("DownloadImage(): TransData(0x%X, 0x%X,0x%X) failed.\n"), \
+				pMxFunc->MxTrans.PhyRAMAddr4KRL + byteIndex, numBytesToWrite, pBuffer + byteIndex);
+			return FALSE;
+		}
+	}
+    return TRUE;
 }
 
 BOOL MxHidDevice::Execute(UINT32 ImageStartAddr)
@@ -402,7 +446,7 @@ BOOL MxHidDevice::TransData(UINT address, UINT byteCount, const unsigned char * 
         pBuf += TransSize;
         //TRACE("Transfer Size: %d\n", MaxHidTransSize);
     }
-    
+
     //below function should be invoked for mx50
 	if ( !GetCmdAck(ROM_STATUS_ACK) )
 	{
@@ -425,9 +469,11 @@ BOOL MxHidDevice::Jump(UINT RAMAddress)
 	if(!SendCmd(&SDPCmd))
 		return FALSE;
 
+
 	if(!GetHABType())
 		return FALSE;
 
-	TRACE("*********Jump to Ramkernel successfully!**********\r\n");
+
+	//TRACE("*********Jump to Ramkernel successfully!**********\r\n");
 	return TRUE;
 }
