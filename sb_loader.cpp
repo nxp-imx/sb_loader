@@ -20,6 +20,7 @@ extern "C" {
 
 #include "sb_loader.h"
 #include <conio.h>
+#include "gitversion.h"
 
 #ifdef _DEBUG
 #define new DEBUG_NEW
@@ -326,7 +327,7 @@ bool ProcessCommandLine(int argc, TCHAR* argv[], CString& fwFilename, ExtendedFu
 		}
 		else if ( arg.CompareNoCase(_T("/v")) == 0 || arg.CompareNoCase(_T("-v")) == 0)
 		{
-			_tprintf(_T("version 1.0 build %s"), _T(__DATE__));
+			_tprintf(_T("Version: %s--%s\nBuild time: %s"),VERSION, _T(GIT_VERSION), _T(__DATE__));
 			ret = false;
 		}
 	    else if ( arg.CompareNoCase(_T("-init")) == 0 && i <= argc-1 )

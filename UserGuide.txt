@@ -11,15 +11,14 @@ Please run the tool in a command line environment:
 2. Enter the dir in which sb_loader.exe locates
 3. Copy your image to the same dir
 
-For mx28, the command is like this: 
+For mx23/28, the command is like this: 
 sb_loader -f xxx.sb
 
-For mx23, the command is like this: 
-sb_loader -f xxx.sb
-
-For mx508, the command is more complicated: 
+For mx50, the command is more complicated: 
 If only one image needs to be downloaded, then just use below command:
 sb_loader -f xxx.xxx
+
+Here xxx.xxx is the name of your image in which a plugin must be contained.
 
 If you need to download multiple images and run them, then a bunch of commands must be executed one by one to finish the whole work, Let's give an example to explain this:
 sb_loader -nojump -f eboot.nb0
