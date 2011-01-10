@@ -60,7 +60,9 @@
 #define DCD_BARKER_CODE        0xB17219E9
 #define IRAM_START_ADDRESS     0xF8000000
 #define IVT_OFFSET             0x400
-
+#define HAB_CMD_WRT_DAT        0xcc  /**< Write Data */
+#define HAB_CMD_CHK_DAT        0xcf  /**< Check Data */
+#define HAB_TAG_DCD            0xd2       /**< Device Configuration Data */
 
 // Address ranges for Production parts: 
 
@@ -108,26 +110,51 @@ public:
 
 	typedef struct _MxTrans
 	{
-        BOOL HasFlashHeader;
+        //BOOL HasFlashHeader;
         UINT PhyRAMAddr4KRL;
 		UINT ExecutingAddr;
         UINT CodeOffset;
-	}MxTrans, * PMxTrans;
+	}ImageParameter, * PImageParameter;
+
+	typedef struct _BootData
+	{
+           unsigned long ImageStartAddr;
+           unsigned long ImageSize;
+		   unsigned long PluginFlag;
+	}BootData, *PBootData;
+
+	//DCD binary data format:
+	//4 bytes for format	4 bytes for register1 address	4 bytes for register1 value to set
+	//4 bytes for format	4 bytes for register2 address	4 bytes for register2 value to set
+	//...
+	typedef struct _RomFormatDCDData
+	{
+		UINT format;
+		UINT addr;
+		UINT data;
+	}RomFormatDCDData, *PRomFormatDCDData;
+
+	typedef struct _ImgFormatDCDData
+	{
+		unsigned long Address;
+		unsigned long Data;
+	}ImgFormatDCDData, *PImgFormatDCDData;
 
     enum eTask {INIT = 1, TRANS, EXEC, RUN, RUN_PLUGIN};
 	typedef struct _MxFunc
 	{
         eTask Task;
         MemoryType   MemType;
-        MxTrans MxTrans;
+        ImageParameter ImageParameter;
 	}MxFunc, * PMxFunc;
 
 	typedef struct _IvtHeader
 	{
            unsigned long IvtBarker;
            unsigned long ImageStartAddr;// LONG(0x70004020)
-           unsigned long Reserved[2];
-           unsigned long BootData;// LONG(0x70004000)
+           unsigned long Reserved;
+		   unsigned long DCDAddress;
+		   unsigned long BootData;
            unsigned long SelfAddr;// LONG(0x70004000)
            unsigned long Reserved2[2];
 	}IvtHeader, *PIvtHeader;
@@ -137,7 +164,7 @@ public:
            unsigned long ImageStartAddr;
            unsigned long Reserved[4];
 	}FlashHeader, *PFlashHeader;
-    
+
 	MxHidDevice();
 	virtual ~MxHidDevice(void);
 	//struct Response SendRklCommand(unsigned short cmdId, unsigned long addr, unsigned long param1, unsigned long param2);
@@ -189,6 +216,7 @@ private:
         UINT addr;
         UINT value;
 	}DCD_Item, * PDCD_Item;
+	UINT m_jumpAddr;
 
 	BOOL MxHidDevice::DCDWrite(PUCHAR DataBuf, UINT RegCount);
 	ChipFamily_t GetChipFamily();
@@ -198,6 +226,7 @@ private:
 	//HAB_t GetHABType(ChipFamily_t chipType);
 	//void PackRklCommand(unsigned char *cmd, unsigned short cmdId, unsigned long addr, unsigned long param1, unsigned long param2);
 	//struct Response UnPackRklResponse(unsigned char *resBuf);
+	BOOL AddIvtHdr(UINT32 ImageStartAddr);
     BOOL Jump(UINT RAMAddress);
 	BOOL TransData(UINT address, UINT byteCount, const unsigned char * pBuf);
     BOOL ReadData(UINT address, UINT byteCount, unsigned char * pBuf);

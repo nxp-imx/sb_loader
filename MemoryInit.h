@@ -1,18 +1,8 @@
 #ifndef   __MEMORYINIT_H__
 #define   __MEMORYINIT_H__
+#include "MxHidDevice.h"
 
-//DCD binary data format:
-//4 bytes for format	4 bytes for register1 address	4 bytes for register1 value to set
-//4 bytes for format	4 bytes for register2 address	4 bytes for register2 value to set
-//...
-typedef struct 
-{
-    UINT format;
-    UINT addr;
-    UINT data;
-} stMemoryInit;
-
-stMemoryInit Mx50_LPDDR2[] = 
+MxHidDevice::RomFormatDCDData Mx50_LPDDR2[] = 
 {
 	{16, 0x53f98000, 0x00000030},
 	{32, 0x53fd4068, 0xffffffff},

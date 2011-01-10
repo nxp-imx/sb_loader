@@ -109,6 +109,7 @@ int _tmain(int argc, TCHAR* argv[], TCHAR* envp[])
 			}
 			break;
 		case MX50:
+		case MX61:
 			{
                 switch(MxFunc.Task)
                 {
@@ -133,7 +134,7 @@ int _tmain(int argc, TCHAR* argv[], TCHAR* envp[])
 						}
                         break;
                     case MxHidDevice::EXEC:
-                        if(!g_pMxHidDevice->Execute(MxFunc.MxTrans.PhyRAMAddr4KRL))
+                        if(!g_pMxHidDevice->Execute(MxFunc.ImageParameter.PhyRAMAddr4KRL))
 							nRetCode = 4;
 	
 						TRACE(__FUNCTION__ " Jump to RAM successfully.\n");
@@ -187,7 +188,8 @@ BOOL SearchDevice()
 		return FALSE;
 	}
 
-	if(g_pHidDevice->GetDevType() == MX50)
+	if((g_pHidDevice->GetDevType() == MX50) || 
+	   (g_pHidDevice->GetDevType() == MX61))
 	{
 		g_pMxHidDevice = new MxHidDevice();
 		g_pDeviceManager->FindHidDevice(g_pMxHidDevice, 2);
@@ -239,7 +241,7 @@ int MxRun(CString fwFilename,UCHAR* DataBuf,ULONGLONG fwSize, MxHidDevice::PMxFu
 	
 	if(pMxFunc->Task != MxHidDevice::RUN_PLUGIN)
 	{
-		if(!g_pMxHidDevice->Execute(pMxFunc->MxTrans.ExecutingAddr))
+		if(!g_pMxHidDevice->Execute(pMxFunc->ImageParameter.ExecutingAddr))
 		{
 			TRACE(__FUNCTION__ " ERROR: During RunPlugIn.\n");
 			_tprintf(_T("%s  Failed to run plugin %s to the device.\n"),indent, fwFilename);
@@ -342,12 +344,12 @@ bool ProcessCommandLine(int argc, TCHAR* argv[], CString& fwFilename, ExtendedFu
 	    else if ( arg.CompareNoCase(_T("-trans")) == 0 && i <= argc-1 )
 	    {
             pMxFunc->Task = MxHidDevice::TRANS;
-            pMxFunc->MxTrans.PhyRAMAddr4KRL = String2Uint(argv[++i]);
+            pMxFunc->ImageParameter.PhyRAMAddr4KRL = String2Uint(argv[++i]);
         }
 	    else if ( arg.CompareNoCase(_T("-exec")) == 0 && i <= argc-1 )
 	    {
             pMxFunc->Task = MxHidDevice::EXEC;
-            pMxFunc->MxTrans.PhyRAMAddr4KRL = String2Uint(argv[++i]);
+            pMxFunc->ImageParameter.PhyRAMAddr4KRL = String2Uint(argv[++i]);
         }
 		else if ( arg.CompareNoCase(_T("-nojump")) == 0 && i <= argc-1 ) 
 	    {

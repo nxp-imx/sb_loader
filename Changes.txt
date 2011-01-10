@@ -9,6 +9,18 @@
 Changes to sb_loader.exe
 =======================================================================================
 
+1.1  01/10/2011
+
+- Support i.MX61 DCD boot method.
+- Support DCD data extraction from image file, eliminates the need of memory initialization table 
+  when applying DCD boot method.
+- Optimize plugin functionality.
+- Refine USB VID definition. 
+
+
+=======================================================================================
+=======================================================================================
+
 1.1  11/09/2010
 
 - Support plugin functionality in SDP mode, which eliminates the need of memory initialization table.

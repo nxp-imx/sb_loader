@@ -178,13 +178,16 @@ HANDLE CHidDevice::OpenSpecifiedDevice (
 		switch (DevType)
 		{
 			case MX23:
-				filter.Format(_T("%s#vid_%04x&pid_%04x"), _T("HID"),MX23_USB_VID, MX23_USB_PID);
+				filter.Format(_T("%s#vid_%04x&pid_%04x"), _T("HID"),OBS_VID, MX23_USB_PID);
 				break;
 			case MX28:
-				filter.Format(_T("%s#vid_%04x&pid_%04x"), _T("HID"),MX28_USB_VID, MX28_USB_PID);
+				filter.Format(_T("%s#vid_%04x&pid_%04x"), _T("HID"),FSL_VID, MX28_USB_PID);
 				break;
 			case MX50:
-				filter.Format(_T("%s#vid_%04x&pid_%04x"), _T("HID"),MX50_USB_VID, MX50_USB_PID);
+				filter.Format(_T("%s#vid_%04x&pid_%04x"), _T("HID"),FSL_VID, MX50_USB_PID);
+				break;
+			case MX61:
+				filter.Format(_T("%s#vid_%04x&pid_%04x"), _T("HID"),FSL_VID, MX50_USB_PID);
 				break;
 			default:
 				filter.Format(_T("%s#vid_%04x&pid_%04x"), _T("HID"),0xFFFF, 0xFFFF);
