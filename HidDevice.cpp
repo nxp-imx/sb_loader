@@ -186,7 +186,7 @@ HANDLE CHidDevice::OpenSpecifiedDevice (
 			case MX50:
 				filter.Format(_T("%s#vid_%04x&pid_%04x"), _T("HID"),FSL_VID, MX50_USB_PID);
 				break;
-			case MX61:
+			case MX6Q:
 				filter.Format(_T("%s#vid_%04x&pid_%04x"), _T("HID"),FSL_VID, MX50_USB_PID);
 				break;
 			default:

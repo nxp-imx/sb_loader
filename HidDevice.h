@@ -13,8 +13,8 @@
 #define FSL_VID 0x15A2
 #define OBS_VID 0x066f
 
-//MX61
-#define MX61_USB_PID 0x0054
+//MX6Q
+#define MX6Q_USB_PID 0x0054
 //MX50
 #define MX50_USB_PID 0x0052
 //MX23
@@ -22,7 +22,7 @@
 //MX28
 #define MX28_USB_PID 0x004f
 
-enum DeviceType {MX23=0,MX28,MX50,MX61,NoDev};
+enum DeviceType {MX23=0,MX28,MX50,MX6Q,NoDev};
 
 struct _HID_DATA_REPORT
 {
