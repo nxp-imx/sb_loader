@@ -53,6 +53,7 @@
 #define MINUM_TRANSFER_SIZE 0x20
 
 #define IVT_BARKER_HEADER      0x402000D1
+#define IVT_BARKER2_HEADER      0x412000D1
 #define ROM_TRANSFER_SIZE	   0x400
 
 #define FLASH_HEADER_SIZE	   0x20
@@ -63,6 +64,7 @@
 #define HAB_CMD_WRT_DAT        0xcc  /**< Write Data */
 #define HAB_CMD_CHK_DAT        0xcf  /**< Check Data */
 #define HAB_TAG_DCD            0xd2       /**< Device Configuration Data */
+#define HAB_DCD_BYTES_MAX     1768 
 
 // Address ranges for Production parts: 
 

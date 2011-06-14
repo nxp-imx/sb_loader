@@ -207,8 +207,10 @@ BOOL MxHidDevice::DCDWrite(PUCHAR DataBuf, UINT RegCount)
     SDPCmd.address = 0;
 	if(GetDevType() != MX6Q)
 	{
+		//i.mx50
 		while(RegCount)
 		{
+			//The data count here is based on register unit.
 			SDPCmd.dataCount = (RegCount > MAX_DCD_WRITE_REG_CNT) ? MAX_DCD_WRITE_REG_CNT : RegCount;
 			RegCount -= SDPCmd.dataCount;
 			UINT ByteCnt = SDPCmd.dataCount*sizeof(RomFormatDCDData);
@@ -229,18 +231,20 @@ BOOL MxHidDevice::DCDWrite(PUCHAR DataBuf, UINT RegCount)
 	}
 	else
 	{
-		UINT RegNumTransfered = 0;
-		while(RegCount)
+		SDPCmd.dataCount = RegCount;
+		SDPCmd.address = 0x00910000;//IRAM free space
+
+		if(!SendCmd(&SDPCmd))
+			return FALSE;
+
+		UINT MaxHidTransSize = m_Capabilities.OutputReportByteLength -1;
+	    
+		while(RegCount > 0)
 		{
-			RegNumTransfered = (RegCount > MAX_DCD_WRITE_REG_CNT) ? MAX_DCD_WRITE_REG_CNT : RegCount;
-			RegCount -= RegNumTransfered;
-			SDPCmd.dataCount = RegNumTransfered*sizeof(RomFormatDCDData);
-			SDPCmd.address = 0x00910000;
+			UINT ByteCntTransfered = (RegCount > MaxHidTransSize) ? MaxHidTransSize : RegCount;
+			RegCount -= ByteCntTransfered;
 
-			if(!SendCmd(&SDPCmd))
-				return FALSE;
-
-			if(!SendData(DataBuf, SDPCmd.dataCount))
+			if(!SendData(DataBuf, ByteCntTransfered))
 				return FALSE;
 
 			if (!GetCmdAck(ROM_WRITE_ACK) )
@@ -248,8 +252,10 @@ BOOL MxHidDevice::DCDWrite(PUCHAR DataBuf, UINT RegCount)
 				return FALSE;
 			}
 
-			DataBuf += SDPCmd.dataCount;
-		}
+			DataBuf += ByteCntTransfered;
+			SDPCmd.address += ByteCntTransfered;
+		}		
+
 		/*SDPCmd.command = ROM_KERNEL_CMD_WR_MEM;
 		SDPCmd.dataCount = 4;
 		PRomFormatDCDData pMemPara = (PRomFormatDCDData)DataBuf;
@@ -307,7 +313,10 @@ BOOL MxHidDevice::RunPlugIn(UCHAR* pBuffer, ULONGLONG dataCount, PMxFunc pMxFunc
     pPlugIn = (DWORD *)pBuffer;
 
 	//ImgIVTOffset indicates the IVT's offset from the beginning of the image.
-    while(ImgIVTOffset < dataCount && pPlugIn[ImgIVTOffset/sizeof(DWORD)] != IVT_BARKER_HEADER)
+    while(ImgIVTOffset < dataCount && 
+		(pPlugIn[ImgIVTOffset/sizeof(DWORD)] != IVT_BARKER_HEADER &&
+		 pPlugIn[ImgIVTOffset/sizeof(DWORD)] != IVT_BARKER2_HEADER
+		))
 		ImgIVTOffset+= 0x100;
 	
 	if(ImgIVTOffset >= dataCount)
@@ -345,10 +354,13 @@ BOOL MxHidDevice::RunPlugIn(UCHAR* pBuffer, ULONGLONG dataCount, PMxFunc pMxFunc
 
 		//---------------------------------------------------------
 		//Download eboot to ram		
-		//IVT2 location follows IVT.
+		//Search IVT2.
+		//ImgIVTOffset indicates the IVT's offset from the beginning of the image.
 		DWORD IVT2Offset = sizeof(IvtHeader);
 
-		while((IVT2Offset + ImgIVTOffset) < dataCount && pPlugIn[IVT2Offset/sizeof(DWORD)] != IVT_BARKER_HEADER )
+		while((IVT2Offset + ImgIVTOffset) < dataCount && 
+			(pPlugIn[IVT2Offset/sizeof(DWORD)] != IVT_BARKER_HEADER &&
+			pPlugIn[IVT2Offset/sizeof(DWORD)] != IVT_BARKER2_HEADER))
 			IVT2Offset+= sizeof(DWORD);
 		
 		if((IVT2Offset + ImgIVTOffset) >= dataCount)
@@ -377,56 +389,82 @@ BOOL MxHidDevice::RunPlugIn(UCHAR* pBuffer, ULONGLONG dataCount, PMxFunc pMxFunc
 			TRACE(CString("DCD header tag doesn't match!\n"));
 			return FALSE;
 		}
-		
-		DWORD DCDDataCount = ((EndianSwap(*pDCDRegion) & 0x00FFFF00)>>8)/sizeof(DWORD);
 
-		PRomFormatDCDData pRomFormatDCDData = (PRomFormatDCDData)malloc(DCDDataCount*sizeof(RomFormatDCDData));
-		//There are several segments in DCD region, we have to extract DCD data with segment unit.
-		//i.e. Below code shows how non-DCD data is inserted to finish a delay operation, we must avoid counting them in.
-		/*DCD_BE 0xCF001024   ; Tag = 0xCF, Len = 1*12+4=0x10, parm = 4
-
-		; Wait for divider to update
-		DCD_BE 0x53FD408C   ; Address
-		DCD_BE 0x00000004   ; Mask
-		DCD_BE 0x1FFFFFFF   ; Loop
-
-		DCD_BE 0xCC031C04   ; Tag = 0xCC, Len = 99*8+4=0x031c, parm = 4*/
-
-		DWORD CurDCDDataCount = 1, ValidRegCount=0;
-		
-		//Quit if current DCD data count reaches total DCD data count.
-		while(CurDCDDataCount < DCDDataCount)
+		if(GetDevType() == MX6Q)
 		{
-			DWORD DCDCmdHdr = EndianSwap(*(pDCDRegion+CurDCDDataCount));
-			CurDCDDataCount++;
-			if((DCDCmdHdr >> 24) == HAB_CMD_WRT_DAT)
+			//The DCD_WRITE command handling was changed from i.MX508.
+			//Now the DCD is  performed by HAB and therefore the format of DCD is the same format as in regular image. 
+			//The DCD_WRITE parameters require size and address. Size is the size of entire DCD file including header. 
+			//Address is the temporary address that USB will use for storing the DCD file before processing.
+
+			DWORD DCDHeader = EndianSwap(*pDCDRegion);
+			//Total dcd data bytes:
+			INT TotalDCDDataCnt = (DCDHeader & 0x00FFFF00) >> 8;
+
+			if(TotalDCDDataCnt > HAB_DCD_BYTES_MAX)
 			{
-				DWORD DCDDataSegCount = (((DCDCmdHdr & 0x00FFFF00) >>8) -4)/sizeof(ImgFormatDCDData); 
-				PImgFormatDCDData pImgFormatDCDData = (PImgFormatDCDData)(pDCDRegion + CurDCDDataCount);
-				//Must convert image dcd data format to ROM dcd format.
-				for(DWORD i=0; i<DCDDataSegCount; i++)
+				_tprintf(_T("DCD data excceeds max limit!!!\r\n"));
+				return FALSE;
+			}
+
+			if ( !DCDWrite((PUCHAR)(pDCDRegion),TotalDCDDataCnt) )
+			{
+				_tprintf(_T("Failed to initialize memory!\r\n"));
+				return FALSE;
+			}
+		}
+		else
+		{
+			DWORD DCDDataCount = ((EndianSwap(*pDCDRegion) & 0x00FFFF00)>>8)/sizeof(DWORD);
+
+			PRomFormatDCDData pRomFormatDCDData = (PRomFormatDCDData)malloc(DCDDataCount*sizeof(RomFormatDCDData));
+			//There are several segments in DCD region, we have to extract DCD data with segment unit.
+			//i.e. Below code shows how non-DCD data is inserted to finish a delay operation, we must avoid counting them in.
+			/*DCD_BE 0xCF001024   ; Tag = 0xCF, Len = 1*12+4=0x10, parm = 4
+
+			; Wait for divider to update
+			DCD_BE 0x53FD408C   ; Address
+			DCD_BE 0x00000004   ; Mask
+			DCD_BE 0x1FFFFFFF   ; Loop
+
+			DCD_BE 0xCC031C04   ; Tag = 0xCC, Len = 99*8+4=0x031c, parm = 4*/
+
+			DWORD CurDCDDataCount = 1, ValidRegCount=0;
+			
+			//Quit if current DCD data count reaches total DCD data count.
+			while(CurDCDDataCount < DCDDataCount)
+			{
+				DWORD DCDCmdHdr = EndianSwap(*(pDCDRegion+CurDCDDataCount));
+				CurDCDDataCount++;
+				if((DCDCmdHdr >> 24) == HAB_CMD_WRT_DAT)
 				{
-					pRomFormatDCDData[ValidRegCount].addr = pImgFormatDCDData[i].Address;
-					pRomFormatDCDData[ValidRegCount].data = pImgFormatDCDData[i].Data;
-					pRomFormatDCDData[ValidRegCount].format = EndianSwap(32);
-					ValidRegCount++;
-					TRACE(CString("{%d,0x%08x,0x%08x},\n"),32, EndianSwap(pImgFormatDCDData[i].Address),EndianSwap(pImgFormatDCDData[i].Data));
+					DWORD DCDDataSegCount = (((DCDCmdHdr & 0x00FFFF00) >>8) -4)/sizeof(ImgFormatDCDData); 
+					PImgFormatDCDData pImgFormatDCDData = (PImgFormatDCDData)(pDCDRegion + CurDCDDataCount);
+					//Must convert image dcd data format to ROM dcd format.
+					for(DWORD i=0; i<DCDDataSegCount; i++)
+					{
+						pRomFormatDCDData[ValidRegCount].addr = pImgFormatDCDData[i].Address;
+						pRomFormatDCDData[ValidRegCount].data = pImgFormatDCDData[i].Data;
+						pRomFormatDCDData[ValidRegCount].format = EndianSwap(32);
+						ValidRegCount++;
+						TRACE(CString("{%d,0x%08x,0x%08x},\n"),32, EndianSwap(pImgFormatDCDData[i].Address),EndianSwap(pImgFormatDCDData[i].Data));
+					}
+					CurDCDDataCount+=DCDDataSegCount*sizeof(ImgFormatDCDData)/sizeof(DWORD);
 				}
-				CurDCDDataCount+=DCDDataSegCount*sizeof(ImgFormatDCDData)/sizeof(DWORD);
+				else if((DCDCmdHdr >> 24) == HAB_CMD_CHK_DAT)
+				{
+					CurDCDDataCount += (((DCDCmdHdr & 0x00FFFF00) >>8) -4)/sizeof(DWORD); 
+				}
 			}
-			else if((DCDCmdHdr >> 24) == HAB_CMD_CHK_DAT)
-			{
-				CurDCDDataCount += (((DCDCmdHdr & 0x00FFFF00) >>8) -4)/sizeof(DWORD); 
-			}
-		}
 
-		if ( !DCDWrite((PUCHAR)(pRomFormatDCDData),ValidRegCount) )
-		{
-			_tprintf(_T("Failed to initialize memory!\r\n"));
+			if ( !DCDWrite((PUCHAR)(pRomFormatDCDData),ValidRegCount) )
+			{
+				_tprintf(_T("Failed to initialize memory!\r\n"));
+				free(pRomFormatDCDData);
+				return FALSE;
+			}
 			free(pRomFormatDCDData);
-			return FALSE;
 		}
-		free(pRomFormatDCDData);
 
 		//---------------------------------------------------------
 		//Download eboot to ram
