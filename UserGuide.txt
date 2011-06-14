@@ -14,7 +14,7 @@ Please run the tool in a command line environment:
 For mx23/28, the command is like this: 
 sb_loader -f xxx.sb
 
-For mx50, the command is more complicated: 
+For mx50/mx6x, the command is more complicated: 
 If only one image needs to be downloaded, then just use below command:
 sb_loader -f xxx.xxx
 
