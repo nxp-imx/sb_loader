@@ -205,26 +205,68 @@ BOOL MxHidDevice::DCDWrite(PUCHAR DataBuf, UINT RegCount)
     SDPCmd.format = 0;
     SDPCmd.data = 0;
     SDPCmd.address = 0;
-
-    while(RegCount)
-    {
-		SDPCmd.dataCount = (RegCount > MAX_DCD_WRITE_REG_CNT) ? MAX_DCD_WRITE_REG_CNT : RegCount;
-		RegCount -= SDPCmd.dataCount;
-		UINT ByteCnt = SDPCmd.dataCount*sizeof(RomFormatDCDData);
-
-		if(!SendCmd(&SDPCmd))
-			return FALSE;
-
-		if(!SendData(DataBuf, ByteCnt))
-			return FALSE;
-
-		if (!GetCmdAck(ROM_WRITE_ACK) )
+	if(GetDevType() != MX6Q)
+	{
+		while(RegCount)
 		{
-			return FALSE;
-		}
+			SDPCmd.dataCount = (RegCount > MAX_DCD_WRITE_REG_CNT) ? MAX_DCD_WRITE_REG_CNT : RegCount;
+			RegCount -= SDPCmd.dataCount;
+			UINT ByteCnt = SDPCmd.dataCount*sizeof(RomFormatDCDData);
 
-		DataBuf += ByteCnt;
-    }
+			if(!SendCmd(&SDPCmd))
+				return FALSE;
+
+			if(!SendData(DataBuf, ByteCnt))
+				return FALSE;
+
+			if (!GetCmdAck(ROM_WRITE_ACK) )
+			{
+				return FALSE;
+			}
+
+			DataBuf += ByteCnt;
+		}
+	}
+	else
+	{
+		UINT RegNumTransfered = 0;
+		while(RegCount)
+		{
+			RegNumTransfered = (RegCount > MAX_DCD_WRITE_REG_CNT) ? MAX_DCD_WRITE_REG_CNT : RegCount;
+			RegCount -= RegNumTransfered;
+			SDPCmd.dataCount = RegNumTransfered*sizeof(RomFormatDCDData);
+			SDPCmd.address = 0x00910000;
+
+			if(!SendCmd(&SDPCmd))
+				return FALSE;
+
+			if(!SendData(DataBuf, SDPCmd.dataCount))
+				return FALSE;
+
+			if (!GetCmdAck(ROM_WRITE_ACK) )
+			{
+				return FALSE;
+			}
+
+			DataBuf += SDPCmd.dataCount;
+		}
+		/*SDPCmd.command = ROM_KERNEL_CMD_WR_MEM;
+		SDPCmd.dataCount = 4;
+		PRomFormatDCDData pMemPara = (PRomFormatDCDData)DataBuf;
+
+		for(int i=0; i<RegCount; i++)
+		{
+			SDPCmd.format = EndianSwap(pMemPara[i].format);
+			SDPCmd.data = EndianSwap(pMemPara[i].data);
+			SDPCmd.address = EndianSwap(pMemPara[i].addr);
+			if ( !WriteReg(&SDPCmd) )
+			{
+				TRACE("Failed to write register: No. 0x%x, format = 0x%x, data = 0x%x, address = 0x%x.\n", i, pMemPara[i].format, pMemPara[i].data, pMemPara[i].addr);
+				return FALSE;
+			}
+			_tprintf(_T("Reg #%d is initialized.\n"), i);
+		}*/
+	}
 
 	return TRUE;
 }
@@ -260,7 +302,7 @@ BOOL MxHidDevice::RunPlugIn(UCHAR* pBuffer, ULONGLONG dataCount, PMxFunc pMxFunc
 	DWORD ImgIVTOffset= 0;
     DWORD PlugInAddr = 0;
 	PIvtHeader pIVT = NULL,pIVT2 = NULL;
-    
+
 	//Search for IVT
     pPlugIn = (DWORD *)pBuffer;
 
@@ -350,7 +392,7 @@ BOOL MxHidDevice::RunPlugIn(UCHAR* pBuffer, ULONGLONG dataCount, PMxFunc pMxFunc
 
 		DCD_BE 0xCC031C04   ; Tag = 0xCC, Len = 99*8+4=0x031c, parm = 4*/
 
-		DWORD CurDCDDataCount = 1, ValidDataCount=0;
+		DWORD CurDCDDataCount = 1, ValidRegCount=0;
 		
 		//Quit if current DCD data count reaches total DCD data count.
 		while(CurDCDDataCount < DCDDataCount)
@@ -364,10 +406,10 @@ BOOL MxHidDevice::RunPlugIn(UCHAR* pBuffer, ULONGLONG dataCount, PMxFunc pMxFunc
 				//Must convert image dcd data format to ROM dcd format.
 				for(DWORD i=0; i<DCDDataSegCount; i++)
 				{
-					pRomFormatDCDData[ValidDataCount].addr = pImgFormatDCDData[i].Address;
-					pRomFormatDCDData[ValidDataCount].data = pImgFormatDCDData[i].Data;
-					pRomFormatDCDData[ValidDataCount].format = EndianSwap(32);
-					ValidDataCount++;
+					pRomFormatDCDData[ValidRegCount].addr = pImgFormatDCDData[i].Address;
+					pRomFormatDCDData[ValidRegCount].data = pImgFormatDCDData[i].Data;
+					pRomFormatDCDData[ValidRegCount].format = EndianSwap(32);
+					ValidRegCount++;
 					TRACE(CString("{%d,0x%08x,0x%08x},\n"),32, EndianSwap(pImgFormatDCDData[i].Address),EndianSwap(pImgFormatDCDData[i].Data));
 				}
 				CurDCDDataCount+=DCDDataSegCount*sizeof(ImgFormatDCDData)/sizeof(DWORD);
@@ -378,7 +420,7 @@ BOOL MxHidDevice::RunPlugIn(UCHAR* pBuffer, ULONGLONG dataCount, PMxFunc pMxFunc
 			}
 		}
 
-		if ( !DCDWrite((PUCHAR)(pRomFormatDCDData),DCDDataCount) )
+		if ( !DCDWrite((PUCHAR)(pRomFormatDCDData),ValidRegCount) )
 		{
 			_tprintf(_T("Failed to initialize memory!\r\n"));
 			free(pRomFormatDCDData);
