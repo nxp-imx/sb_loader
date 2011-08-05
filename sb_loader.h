@@ -4,7 +4,7 @@
  * Copyright (c) 2010 Freescale Semiconductor, Inc. All rights reserved.
  * See included license file for license details.
 */
-#define VERSION _T("1.1")
+#define VERSION _T("1.2")
 
 #define SUCCESS	0
 
