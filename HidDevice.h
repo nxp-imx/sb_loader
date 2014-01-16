@@ -19,6 +19,8 @@
 #define MX6D_USB_PID 0x0061
 //MX6SL
 #define MX6SL_USB_PID 0x0063
+//MX6SX
+#define MX6SX_USB_PID 0x0071
 //MX50
 #define MX50_USB_PID 0x0052
 //MX23
@@ -26,7 +28,7 @@
 //MX28
 #define MX28_USB_PID 0x004f
 
-enum DeviceType {MX23=0,MX28,MX50,MX6Q,MX6D,MX6SL,NoDev};
+enum DeviceType {MX23=0,MX28,MX50,MX6Q,MX6D,MX6SL,MX6SX, NoDev};
 
 struct _HID_DATA_REPORT
 {
