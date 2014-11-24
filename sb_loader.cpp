@@ -113,6 +113,7 @@ int _tmain(int argc, TCHAR* argv[], TCHAR* envp[])
 		case MX6D:
 		case MX6SL:
 		case MX6SX:
+		case MX7D:
 			{
                 switch(MxFunc.Task)
                 {
@@ -195,7 +196,8 @@ BOOL SearchDevice()
 	   (g_pHidDevice->GetDevType() == MX6Q) ||
 	   (g_pHidDevice->GetDevType() == MX6D) ||
 	   (g_pHidDevice->GetDevType() == MX6SL) ||
-	   (g_pHidDevice->GetDevType() == MX6SX))
+	   (g_pHidDevice->GetDevType() == MX6SX) ||
+	   (g_pHidDevice->GetDevType() == MX7D))
 	{
 		g_pMxHidDevice = new MxHidDevice();
 		g_pDeviceManager->FindHidDevice(g_pMxHidDevice, 2);

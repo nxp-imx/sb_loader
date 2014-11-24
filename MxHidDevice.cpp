@@ -205,7 +205,7 @@ BOOL MxHidDevice::DCDWrite(PUCHAR DataBuf, UINT RegCount)
     SDPCmd.format = 0;
     SDPCmd.data = 0;
     SDPCmd.address = 0;
-	if(GetDevType() != MX6Q && GetDevType() != MX6D && GetDevType() != MX6SL && GetDevType() != MX6SX)
+	if(GetDevType() != MX6Q && GetDevType() != MX6D && GetDevType() != MX6SL && GetDevType() != MX6SX && GetDevType() != MX7D)
 	{
 		//i.mx50
 		while(RegCount)
@@ -390,7 +390,7 @@ BOOL MxHidDevice::RunPlugIn(UCHAR* pBuffer, ULONGLONG dataCount, PMxFunc pMxFunc
 			return FALSE;
 		}
 
-		if(GetDevType() == MX6Q || GetDevType() == MX6D || GetDevType() == MX6SL || GetDevType() == MX6SX)
+		if(GetDevType() == MX6Q || GetDevType() == MX6D || GetDevType() == MX6SL || GetDevType() == MX6SX || GetDevType() == MX7D)
 		{
 			//The DCD_WRITE command handling was changed from i.MX508.
 			//Now the DCD is  performed by HAB and therefore the format of DCD is the same format as in regular image. 
@@ -652,6 +652,17 @@ BOOL MxHidDevice::TransData(UINT address, UINT byteCount, const unsigned char * 
 BOOL MxHidDevice::Jump(UINT RAMAddress)
 {
     SDPCmd SDPCmd;
+
+	if(this->m_DevType >= MX7D) {
+		SDPCmd.command = ROM_KERNEL_CMD_SKIP_DCD_HEADER;
+		SDPCmd.dataCount = 0;
+		SDPCmd.format = 0;
+		SDPCmd.data = 0;
+		SDPCmd.address = 0;
+
+		if(!SendCmd(&SDPCmd))
+			return FALSE;
+	}
 
     SDPCmd.command = ROM_KERNEL_CMD_JUMP_ADDR;
     SDPCmd.dataCount = 0;
