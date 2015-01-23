@@ -374,6 +374,14 @@ bool ProcessCommandLine(int argc, TCHAR* argv[], CString& fwFilename, ExtendedFu
 		}
 	}
 
+	fwFilename.Trim();
+
+	if (fwFilename.IsEmpty())
+	{
+			PrintUsage();
+			ret = false;
+	}
+
 	return ret;
 }
 
