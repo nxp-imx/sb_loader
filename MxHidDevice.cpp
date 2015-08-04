@@ -247,15 +247,14 @@ BOOL MxHidDevice::DCDWrite(PUCHAR DataBuf, UINT RegCount)
 			if(!SendData(DataBuf, ByteCntTransfered))
 				return FALSE;
 
-			if (!GetCmdAck(ROM_WRITE_ACK) )
-			{
-				return FALSE;
-			}
-
 			DataBuf += ByteCntTransfered;
 			SDPCmd.address += ByteCntTransfered;
 		}		
 
+		if (!GetCmdAck(ROM_WRITE_ACK))
+		{
+			return FALSE;
+		}
 		/*SDPCmd.command = ROM_KERNEL_CMD_WR_MEM;
 		SDPCmd.dataCount = 4;
 		PRomFormatDCDData pMemPara = (PRomFormatDCDData)DataBuf;
