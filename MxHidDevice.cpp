@@ -369,7 +369,7 @@ BOOL MxHidDevice::RunPlugIn(UCHAR* pBuffer, ULONGLONG dataCount, PMxFunc pMxFunc
 		//IVTOffset indicates the offset used by ROM, entirely different with ImgIVTOffset.
 		DWORD IVTOffset = pIVT->SelfAddr - pPluginDataBuf->ImageStartAddr;
 
-		PBootData pBootDataBuf = (PBootData)(pPlugIn + (pIVT2->BootData - pIVT->SelfAddr)/sizeof(DWORD));
+		PBootData pBootDataBuf = (PBootData)(pPlugIn + (pIVT2->BootData - pIVT2->SelfAddr + IVT2Offset) / sizeof(DWORD));
 
 		pMxFunc->ImageParameter.PhyRAMAddr4KRL = pBootDataBuf->ImageStartAddr + IVTOffset - ImgIVTOffset;
 		pMxFunc->ImageParameter.CodeOffset = pIVT2->ImageStartAddr - pMxFunc->ImageParameter.PhyRAMAddr4KRL;
@@ -661,6 +661,11 @@ BOOL MxHidDevice::Jump(UINT RAMAddress)
 
 		if(!SendCmd(&SDPCmd))
 			return FALSE;
+
+		if (!GetCmdAck(ROM_OK_ACK))
+		{
+			return FALSE;
+		}
 	}
 
     SDPCmd.command = ROM_KERNEL_CMD_JUMP_ADDR;
@@ -676,6 +681,7 @@ BOOL MxHidDevice::Jump(UINT RAMAddress)
 	if(!GetHABType())
 		return FALSE;
 
+	GetDevAck(ROM_OK_ACK);  /*omit rom return error code*/
 
 	//TRACE("*********Jump to Ramkernel successfully!**********\r\n");
 	return TRUE;
