@@ -108,13 +108,7 @@ int _tmain(int argc, TCHAR* argv[], TCHAR* envp[])
 				nRetCode = StDownload(fwFilename,DataBuf,fwSize);
 			}
 			break;
-		case MX50:
-		case MX6Q:
-		case MX6D:
-		case MX6SL:
-		case MX6SX:
-		case MX7D:
-		case MX6UL:
+		default:
 			{
                 switch(MxFunc.Task)
                 {
@@ -193,13 +187,7 @@ BOOL SearchDevice()
 		return FALSE;
 	}
 
-	if((g_pHidDevice->GetDevType() == MX50) || 
-	   (g_pHidDevice->GetDevType() == MX6Q) ||
-	   (g_pHidDevice->GetDevType() == MX6D) ||
-	   (g_pHidDevice->GetDevType() == MX6SL) ||
-	   (g_pHidDevice->GetDevType() == MX6SX) ||
-	   (g_pHidDevice->GetDevType() == MX7D) ||
-	   (g_pHidDevice->GetDevType() == MX6UL))
+	if((g_pHidDevice->GetDevType() != MX28) && (g_pHidDevice->GetDevType() != MX23))
 	{
 		g_pMxHidDevice = new MxHidDevice();
 		g_pDeviceManager->FindHidDevice(g_pMxHidDevice, 2);
