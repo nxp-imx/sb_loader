@@ -1,3 +1,11 @@
+/*
+ * File:      MxHidDevice.cpp
+ *
+ * Copyright (c) 2010-2015 Freescale Semiconductor, Inc. All rights reserved.
+ * See included license file for license details.
+ */
+
+
 #pragma once
 #include "stdafx.h"
 #include <basetyps.h>

@@ -1,3 +1,11 @@
+/*
+ * File:      sb_loader.cpp
+ *
+ * Copyright (c) 2010-2016 Freescale Semiconductor, Inc. All rights reserved.
+ * See included license file for license details.
+ */
+
+
 // sb_loader.cpp : Defines the entry point for the console application.
 //
 

@@ -1,3 +1,10 @@
+/*
+ * File:      HidDevice.cpp
+ *
+ * Copyright (c) 2010 Freescale Semiconductor, Inc. All rights reserved.
+ * See included license file for license details.
+ */
+
 #ifndef   __MEMORYINIT_H__
 #define   __MEMORYINIT_H__
 #include "MxHidDevice.h"
