@@ -1,4 +1,4 @@
-# sb_loader
+# sb_loader ver 1.3 GPL-2.0
 
 The tool is used to download an image to IMX platform to run. 
 
