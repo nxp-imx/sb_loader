@@ -17,5 +17,5 @@ int CaptureTss(CString indent);
 bool ProcessCommandLine(int argc, TCHAR* argv[], CString& fwFilename, ExtendedFunction& function, DeviceType* DevType, MxHidDevice::PMxFunc pMxFunc);
 void PrintUsage();
 BOOL SearchDevice();
-int StDownload(CString fwFilename,UCHAR* fwBytes,ULONGLONG fwSize);
-int MxRun(CString fwFilename,UCHAR* DataBuf,ULONGLONG fwSize, MxHidDevice::PMxFunc pMxFunc);
+int StDownload(CString fwFilename, UCHAR* fwBytes, ULONGLONG fwSize);
+int MxRun(CString fwFilename, UCHAR* DataBuf, ULONGLONG fwSize, MxHidDevice::PMxFunc pMxFunc);
