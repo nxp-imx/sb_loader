@@ -394,10 +394,10 @@ void PrintUsage()
 		_T("\t-f or /f <filename> - where <filename> is the file to download. Default: \"firmware.sb\"\n\n") \
 		_T("\t-tss or /tss - captures and prints the TSS output after the file is downloaded.\n\n") \
 		_T("\t-h or /h - displays this screen.\n\n") \
-		_T("\t-nojump - Load but don't execute the image in which plugin is contained to RAM. Only available for mx50.\n\n") \
-		_T("\t-trans - Load the image to RAM, the target address must be followed. Only available for mx50.\n\n") \
-		_T("\t-exec - Execute the image, the execution address must be followed. Only available for mx50.\n\n") \
-		_T("\t-init - initialize RAM by using the settings defined in memoryinit.h. Only available for mx50.\n\n") \
+		_T("\t-nojump - Load but don't execute the image in which plugin is contained to RAM. Available for mx50 and later.\n\n") \
+		_T("\t-trans - Load the image to RAM, the target address must be followed. Available for mx50 and later.\n\n") \
+		_T("\t-exec - Execute the image, the execution address must be followed. Available for mx50 and later.\n\n") \
+		_T("\t-init - initialize RAM by using the settings defined in memoryinit.h. Available for mx50 and later.\n\n") \
 		_T("\tbelow instance download and run an image:\n") \
 		_T("\tsb_loader -f uboot.bin\n\n");
 
