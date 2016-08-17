@@ -333,6 +333,12 @@ BOOL MxHidDevice::RunPlugIn(UCHAR* pBuffer, ULONGLONG dataCount, PMxFunc pMxFunc
 	pPlugIn += ImgIVTOffset / sizeof(DWORD);
 
 	pIVT = (PIvtHeader)pPlugIn;
+
+	//Set image parameter as if we don't use a plug-in, gets overwritten in case we use a plug-in by IVT2.
+	pMxFunc->ImageParameter.PhyRAMAddr4KRL = pIVT->SelfAddr - ImgIVTOffset;
+	pMxFunc->ImageParameter.CodeOffset = pIVT->ImageStartAddr - pMxFunc->ImageParameter.PhyRAMAddr4KRL;
+	pMxFunc->ImageParameter.ExecutingAddr = pIVT->ImageStartAddr;
+
 	//Now we have to judge DCD way or plugin way used in the image
 	//The method is to check plugin flag in boot data region
 	// IVT boot data format
@@ -383,7 +389,7 @@ BOOL MxHidDevice::RunPlugIn(UCHAR* pBuffer, ULONGLONG dataCount, PMxFunc pMxFunc
 		pMxFunc->ImageParameter.CodeOffset = pIVT2->ImageStartAddr - pMxFunc->ImageParameter.PhyRAMAddr4KRL;
 		pMxFunc->ImageParameter.ExecutingAddr = pIVT2->ImageStartAddr;
 	}
-	else
+	else if (pIVT->DCDAddress)
 	{
 		//DCD mode
 		DWORD * pDCDRegion = pPlugIn + (pIVT->DCDAddress - pIVT->SelfAddr) / sizeof(DWORD);
@@ -472,12 +478,6 @@ BOOL MxHidDevice::RunPlugIn(UCHAR* pBuffer, ULONGLONG dataCount, PMxFunc pMxFunc
 			}
 			free(pRomFormatDCDData);
 		}
-
-		//---------------------------------------------------------
-		//Download eboot to ram
-		pMxFunc->ImageParameter.PhyRAMAddr4KRL = pIVT->SelfAddr - ImgIVTOffset;
-		pMxFunc->ImageParameter.CodeOffset = pIVT->ImageStartAddr - pMxFunc->ImageParameter.PhyRAMAddr4KRL;
-		pMxFunc->ImageParameter.ExecutingAddr = pIVT->ImageStartAddr;
 	}
 	return TRUE;
 }
