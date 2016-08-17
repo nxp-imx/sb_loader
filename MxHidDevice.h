@@ -144,7 +144,7 @@ public:
 		unsigned long Data;
 	}ImgFormatDCDData, *PImgFormatDCDData;
 
-	enum eTask { INIT = 1, TRANS, EXEC, RUN, RUN_PLUGIN };
+	enum eTask { INIT = 1, TRANS, EXEC, JUMP, RUN, RUN_PLUGIN };
 	typedef struct _MxFunc
 	{
 		eTask Task;
@@ -177,6 +177,7 @@ public:
 	//BOOL ProgramFlash(std::ifstream& file, UINT address, UINT cmdID, UINT flags, Device::UI_Callback callback);
 	BOOL Download(UCHAR* pBuffer, ULONGLONG dataCount, PMxFunc pMxFunc);
 	BOOL Execute(UINT32 ImageStartAddr);
+	BOOL Jump(UINT RAMAddress);
 	BOOL MxHidDevice::RunPlugIn(UCHAR* pBuffer, ULONGLONG dataCount, PMxFunc pMxFunc);
 	//BOOL Reset();
 
@@ -231,7 +232,6 @@ private:
 	//void PackRklCommand(unsigned char *cmd, unsigned short cmdId, unsigned long addr, unsigned long param1, unsigned long param2);
 	//struct Response UnPackRklResponse(unsigned char *resBuf);
 	BOOL AddIvtHdr(UINT32 ImageStartAddr);
-	BOOL Jump(UINT RAMAddress);
 	BOOL TransData(UINT address, UINT byteCount, const unsigned char * pBuf);
 	BOOL ReadData(UINT address, UINT byteCount, unsigned char * pBuf);
 	BOOL WriteToDevice(const unsigned char *buf, UINT count);

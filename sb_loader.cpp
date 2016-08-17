@@ -143,9 +143,20 @@ int _tmain(int argc, TCHAR* argv[], TCHAR* envp[])
 			case MxHidDevice::EXEC:
 				if (!g_pMxHidDevice->Execute(MxFunc.ImageParameter.PhyRAMAddr4KRL))
 				{
+					TRACE(__FUNCTION__ " ERROR: Exec RAM failed.\n");
+					_tprintf(_T("%  Failed to exec RAM.\n"), indent);
+					nRetCode = 4;
+					return nRetCode;
+				}
+				TRACE(__FUNCTION__ " Exec RAM successfully.\n");
+				_tprintf(_T("%sExec RAM successfully.\n"), indent);
+				break;
+			case MxHidDevice::JUMP:
+				if (!g_pMxHidDevice->Jump(MxFunc.ImageParameter.PhyRAMAddr4KRL))
+				{
 					TRACE(__FUNCTION__ " ERROR: Jump to RAM failed.\n");
 					_tprintf(_T("%  Failed to jump to RAM.\n"), indent);
-					nRetCode = 4;
+					nRetCode = 5;
 					return nRetCode;
 				}
 				TRACE(__FUNCTION__ " Jump to RAM successfully.\n");
@@ -361,6 +372,11 @@ bool ProcessCommandLine(int argc, TCHAR* argv[], CString& fwFilename, ExtendedFu
 			pMxFunc->Task = MxHidDevice::EXEC;
 			pMxFunc->ImageParameter.PhyRAMAddr4KRL = String2Uint(argv[++i]);
 		}
+		else if (arg.CompareNoCase(_T("-jump")) == 0 && i <= argc - 1)
+		{
+			pMxFunc->Task = MxHidDevice::JUMP;
+			pMxFunc->ImageParameter.PhyRAMAddr4KRL = String2Uint(argv[++i]);
+		}
 		else if (arg.CompareNoCase(_T("-nojump")) == 0 && i <= argc - 1)
 		{
 			pMxFunc->Task = MxHidDevice::RUN_PLUGIN;
@@ -397,6 +413,7 @@ void PrintUsage()
 		_T("\t-nojump - Load but don't execute the image in which plugin is contained to RAM. Available for mx50 and later.\n\n") \
 		_T("\t-trans - Load the image to RAM, the target address must be followed. Available for mx50 and later.\n\n") \
 		_T("\t-exec - Execute the image, the execution address must be followed. Available for mx50 and later.\n\n") \
+		_T("\t-jump - Jump to the image, the image address must be followed. Available for mx50 and later.\n\n") \
 		_T("\t-init - initialize RAM by using the settings defined in memoryinit.h. Available for mx50 and later.\n\n") \
 		_T("\tbelow instance download and run an image:\n") \
 		_T("\tsb_loader -f uboot.bin\n\n");
