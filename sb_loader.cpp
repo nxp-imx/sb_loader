@@ -142,8 +142,12 @@ int _tmain(int argc, TCHAR* argv[], TCHAR* envp[])
 				break;
 			case MxHidDevice::EXEC:
 				if (!g_pMxHidDevice->Execute(MxFunc.ImageParameter.PhyRAMAddr4KRL))
+				{
+					TRACE(__FUNCTION__ " ERROR: Jump to RAM failed.\n");
+					_tprintf(_T("%  Failed to jump to RAM.\n"), indent);
 					nRetCode = 4;
-
+					return nRetCode;
+				}
 				TRACE(__FUNCTION__ " Jump to RAM successfully.\n");
 				_tprintf(_T("%sJump to RAM successfully.\n"), indent);
 				break;
