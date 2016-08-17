@@ -73,7 +73,7 @@
 /// <summary>
 /// A MxHidDevice device.
 /// </summary>
-class MxHidDevice:public CHidDevice
+class MxHidDevice :public CHidDevice
 {
 
 public:
@@ -91,11 +91,11 @@ public:
 	enum MemorySection { MemSectionOTH = 0x00, MemSectionAPP = 0xAA, MemSectionCSF = 0xCC, MemSectionDCD = 0xEE };
 	static MemorySection StringToMemorySection(CString section)
 	{
-		if ( section.CompareNoCase(_T("DCD")) == 0 )
+		if (section.CompareNoCase(_T("DCD")) == 0)
 			return MemSectionDCD;
-		else if ( section.CompareNoCase(_T("CSF")) == 0 )
+		else if (section.CompareNoCase(_T("CSF")) == 0)
 			return MemSectionCSF;
-		else if ( section.CompareNoCase(_T("APP")) == 0 )
+		else if (section.CompareNoCase(_T("APP")) == 0)
 			return MemSectionAPP;
 		else return MemSectionOTH;
 	}
@@ -103,28 +103,28 @@ public:
 	enum MemoryAction { MemAction_None, MemAction_Set, MemAction_Jump };
 	static MemoryAction StringToMemoryAction(CString action)
 	{
-		if ( action.CompareNoCase(_T("Set")) == 0 )
+		if (action.CompareNoCase(_T("Set")) == 0)
 			return MemAction_Set;
-		else if ( action.CompareNoCase(_T("Jump")) == 0 )
+		else if (action.CompareNoCase(_T("Jump")) == 0)
 			return MemAction_Jump;
 		else return MemAction_None;
 	}
-    
-    enum MemoryType {LPDDR2_V3, LPDDR2, MDDR};
+
+	enum MemoryType { LPDDR2_V3, LPDDR2, MDDR };
 
 	typedef struct _MxTrans
 	{
-        //BOOL HasFlashHeader;
-        UINT PhyRAMAddr4KRL;
+		//BOOL HasFlashHeader;
+		UINT PhyRAMAddr4KRL;
 		UINT ExecutingAddr;
-        UINT CodeOffset;
-	}ImageParameter, * PImageParameter;
+		UINT CodeOffset;
+	}ImageParameter, *PImageParameter;
 
 	typedef struct _BootData
 	{
-           unsigned long ImageStartAddr;
-           unsigned long ImageSize;
-		   unsigned long PluginFlag;
+		unsigned long ImageStartAddr;
+		unsigned long ImageSize;
+		unsigned long PluginFlag;
 	}BootData, *PBootData;
 
 	//DCD binary data format:
@@ -144,29 +144,29 @@ public:
 		unsigned long Data;
 	}ImgFormatDCDData, *PImgFormatDCDData;
 
-    enum eTask {INIT = 1, TRANS, EXEC, RUN, RUN_PLUGIN};
+	enum eTask { INIT = 1, TRANS, EXEC, RUN, RUN_PLUGIN };
 	typedef struct _MxFunc
 	{
-        eTask Task;
-        MemoryType   MemType;
-        ImageParameter ImageParameter;
-	}MxFunc, * PMxFunc;
+		eTask Task;
+		MemoryType   MemType;
+		ImageParameter ImageParameter;
+	}MxFunc, *PMxFunc;
 
 	typedef struct _IvtHeader
 	{
-           unsigned long IvtBarker;
-           unsigned long ImageStartAddr;// LONG(0x70004020)
-           unsigned long Reserved;
-		   unsigned long DCDAddress;
-		   unsigned long BootData;
-           unsigned long SelfAddr;// LONG(0x70004000)
-           unsigned long Reserved2[2];
+		unsigned long IvtBarker;
+		unsigned long ImageStartAddr;// LONG(0x70004020)
+		unsigned long Reserved;
+		unsigned long DCDAddress;
+		unsigned long BootData;
+		unsigned long SelfAddr;// LONG(0x70004000)
+		unsigned long Reserved2[2];
 	}IvtHeader, *PIvtHeader;
 
 	typedef struct _FlashHeader
 	{
-           unsigned long ImageStartAddr;
-           unsigned long Reserved[4];
+		unsigned long ImageStartAddr;
+		unsigned long Reserved[4];
 	}FlashHeader, *PFlashHeader;
 
 	MxHidDevice();
@@ -176,7 +176,7 @@ public:
 	BOOL InitMemoryDevice(MemoryType MemType);
 	//BOOL ProgramFlash(std::ifstream& file, UINT address, UINT cmdID, UINT flags, Device::UI_Callback callback);
 	BOOL Download(UCHAR* pBuffer, ULONGLONG dataCount, PMxFunc pMxFunc);
-    BOOL Execute(UINT32 ImageStartAddr);
+	BOOL Execute(UINT32 ImageStartAddr);
 	BOOL MxHidDevice::RunPlugIn(UCHAR* pBuffer, ULONGLONG dataCount, PMxFunc pMxFunc);
 	//BOOL Reset();
 
@@ -185,68 +185,68 @@ public:
 	typedef struct _MxRomParamt
 	{
 		CString cMXType;
-		CString cSecurity; 
+		CString cSecurity;
 		CString cRAMType;
 		CString cMemInitFilePath;
-	}MxRomParamt, * PMxRomParamt;
+	}MxRomParamt, *PMxRomParamt;
 	MxRomParamt m_MxRomParamt;
 
 private:
 	enum HAB_t
 	{
-		HabUnknown  = -1,
-		HabEnabled  = 0x12343412,
+		HabUnknown = -1,
+		HabEnabled = 0x12343412,
 		HabDisabled = 0x56787856
 	};
 
-    enum ChipFamily_t
-    {
-        ChipUnknown = 0,
-        MX508
-    };
+	enum ChipFamily_t
+	{
+		ChipUnknown = 0,
+		MX508
+	};
 
 	typedef struct _SDPCmd
 	{
-        short command;
-        char format;
-        UINT address;
-        UINT dataCount;
-        UINT data;
-	}SDPCmd, * PSDPCmd;
+		short command;
+		char format;
+		UINT address;
+		UINT dataCount;
+		UINT data;
+	}SDPCmd, *PSDPCmd;
 
-    typedef struct _DCD_Item
+	typedef struct _DCD_Item
 	{
-        UINT type;
-        UINT addr;
-        UINT value;
-	}DCD_Item, * PDCD_Item;
+		UINT type;
+		UINT addr;
+		UINT value;
+	}DCD_Item, *PDCD_Item;
 	UINT m_jumpAddr;
 
 	BOOL MxHidDevice::DCDWrite(PUCHAR DataBuf, UINT RegCount);
 	ChipFamily_t GetChipFamily();
-    BOOL MxHidDevice::GetCmdAck(UINT RequiredCmdAck);
+	BOOL MxHidDevice::GetCmdAck(UINT RequiredCmdAck);
 	BOOL WriteMemory(UINT address, UINT data, UINT format);
 	BOOL ValidAddress(const UINT address, const UINT format) const;
 	//HAB_t GetHABType(ChipFamily_t chipType);
 	//void PackRklCommand(unsigned char *cmd, unsigned short cmdId, unsigned long addr, unsigned long param1, unsigned long param2);
 	//struct Response UnPackRklResponse(unsigned char *resBuf);
 	BOOL AddIvtHdr(UINT32 ImageStartAddr);
-    BOOL Jump(UINT RAMAddress);
+	BOOL Jump(UINT RAMAddress);
 	BOOL TransData(UINT address, UINT byteCount, const unsigned char * pBuf);
-    BOOL ReadData(UINT address, UINT byteCount, unsigned char * pBuf);
+	BOOL ReadData(UINT address, UINT byteCount, unsigned char * pBuf);
 	BOOL WriteToDevice(const unsigned char *buf, UINT count);
 	BOOL ReadFromDevice(PUCHAR buf, UINT count);
 	BOOL DeviceIoControl(DWORD controlCode, PVOID pRequest = NULL);
 	BOOL OpenUSBHandle(HANDLE *pHandle, CString pipePath);
-    VOID PackSDPCmd(PSDPCmd pSDPCmd);
-    BOOL WriteReg(PSDPCmd pSDPCmd);
+	VOID PackSDPCmd(PSDPCmd pSDPCmd);
+	BOOL WriteReg(PSDPCmd pSDPCmd);
 	BOOL MxHidDevice::SendCmd(PSDPCmd pSDPCmd);
 	BOOL MxHidDevice::SendData(const unsigned char * DataBuf, UINT ByteCnt);
 	BOOL MxHidDevice::GetHABType();
 	BOOL MxHidDevice::GetDevAck(UINT RequiredCmdAck);
 	ChipFamily_t _chipFamily;
 	HAB_t _habType;
-    //unsigned char _pSDPCmdBuf[SDP_REPORT_LENGTH];
+	//unsigned char _pSDPCmdBuf[SDP_REPORT_LENGTH];
 	enum ChannelType { ChannelType_UART = 0, ChannelType_USB };
 };
 #endif //  __MXHIDDEVICE_H__
