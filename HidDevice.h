@@ -11,6 +11,7 @@
 #pragma pack(1)
 
 #define FSL_VID 0x15A2
+#define NXP_VID 0x1FC9
 #define OBS_VID 0x066f
 
 //MX6Q
@@ -27,6 +28,8 @@
 #define MX6UL_USB_PID 0x007d
 //MX6ULL
 #define MX6ULL_USB_PID 0x0080
+//MX6SLL
+#define MX6SLL_USB_PID 0x0128
 //MX50
 #define MX50_USB_PID 0x0052
 //MX23
@@ -34,7 +37,7 @@
 //MX28
 #define MX28_USB_PID 0x004f
 
-enum DeviceType {MX23=0,MX28,MX50,MX6Q,MX6D,MX6SL,MX6SX,MX7D,MX6UL,MX6ULL,NoDev};
+enum DeviceType {MX23=0,MX28,MX50,MX6Q,MX6D,MX6SL,MX6SX,MX7D,MX6UL,MX6ULL,MX6SLL, NoDev};
 
 struct _HID_DATA_REPORT
 {
