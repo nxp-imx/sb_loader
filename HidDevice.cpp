@@ -210,6 +210,9 @@ else INVLAID_HANDLE_VALUE.
 		case MX6SLL:
 			filter.Format(_T("%s#vid_%04x&pid_%04x"), _T("HID"), NXP_VID, MX6SLL_USB_PID);
 			break;
+		case MX7ULP:
+			filter.Format(_T("%s#vid_%04x&pid_%04x"), _T("HID"), NXP_VID, MX7ULP_USB_PID);
+			break;
 		default:
 			filter.Format(_T("%s#vid_%04x&pid_%04x"), _T("HID"), 0xFFFF, 0xFFFF);
 			break;
