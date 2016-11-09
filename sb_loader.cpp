@@ -394,7 +394,8 @@ bool ProcessCommandLine(int argc, TCHAR* argv[], CString& fwFilename, ExtendedFu
 
 	fwFilename.Trim();
 
-	if (fwFilename.IsEmpty())
+	if ((pMxFunc->Task != MxHidDevice::EXEC) &&
+        fwFilename.IsEmpty())
 	{
 		PrintUsage();
 		ret = false;
