@@ -343,6 +343,7 @@ BOOL MxHidDevice::RunPlugIn(UCHAR* pBuffer, ULONGLONG dataCount, PMxFunc pMxFunc
 	pMxFunc->ImageParameter.PhyRAMAddr4KRL = pIVT->SelfAddr - ImgIVTOffset;
 	pMxFunc->ImageParameter.CodeOffset = pIVT->ImageStartAddr - pMxFunc->ImageParameter.PhyRAMAddr4KRL;
 	pMxFunc->ImageParameter.ExecutingAddr = pIVT->ImageStartAddr;
+	pMxFunc->pIVT = pIVT;
 
 	//Now we have to judge DCD way or plugin way used in the image
 	//The method is to check plugin flag in boot data region
@@ -360,15 +361,18 @@ BOOL MxHidDevice::RunPlugIn(UCHAR* pBuffer, ULONGLONG dataCount, PMxFunc pMxFunc
 		//Download plugin data into IRAM.
 		PlugInAddr = pIVT->ImageStartAddr;
 		DWORD PlugInDataOffset = pIVT->ImageStartAddr - pIVT->SelfAddr;
-		if (!TransData(PlugInAddr, pPluginDataBuf->ImageSize, (PUCHAR)((DWORD)pIVT + PlugInDataOffset)))
+		if (!TransData(pIVT->SelfAddr, pPluginDataBuf->ImageSize, (PUCHAR)((DWORD)pIVT)))
 		{
 			TRACE(_T("Download(): TransData(0x%X, 0x%X,0x%X) failed.\n"), \
 				PlugInAddr, pPluginDataBuf->ImageSize, (PUCHAR)((DWORD)pIVT + PlugInDataOffset));
 			return FALSE;
 		}
 
-		if (!Execute(PlugInAddr))
+		if (!Jump(pIVT->SelfAddr))
+		{
+			TRACE(_T("Download(): Failed to jump to RAM address: 0x%x.\n"), m_jumpAddr);
 			return FALSE;
+		}
 
 		//---------------------------------------------------------
 		//Download eboot to ram		
@@ -393,6 +397,8 @@ BOOL MxHidDevice::RunPlugIn(UCHAR* pBuffer, ULONGLONG dataCount, PMxFunc pMxFunc
 		pMxFunc->ImageParameter.PhyRAMAddr4KRL = pBootDataBuf->ImageStartAddr + IVTOffset - ImgIVTOffset;
 		pMxFunc->ImageParameter.CodeOffset = pIVT2->ImageStartAddr - pMxFunc->ImageParameter.PhyRAMAddr4KRL;
 		pMxFunc->ImageParameter.ExecutingAddr = pIVT2->ImageStartAddr;
+
+		pMxFunc->pIVT = pIVT2;
 	}
 	else if (pIVT->DCDAddress)
 	{
@@ -491,12 +497,15 @@ BOOL MxHidDevice::Download(UCHAR* pBuffer, ULONGLONG dataCount, PMxFunc pMxFunc)
 {
 	//if(pMxFunc->Task == TRANS)
 	DWORD byteIndex, numBytesToWrite = 0;
+
+	UINT start = pMxFunc->ImageParameter.PhyRAMAddr4KRL;
+
 	for (byteIndex = 0; byteIndex < dataCount; byteIndex += numBytesToWrite)
 	{
 		// Get some data
 		numBytesToWrite = min(MAX_SIZE_PER_DOWNLOAD_COMMAND, (DWORD)dataCount - byteIndex);
 
-		if (!TransData(pMxFunc->ImageParameter.PhyRAMAddr4KRL + byteIndex, numBytesToWrite, pBuffer + byteIndex))
+		if (!TransData(start + byteIndex, numBytesToWrite, pBuffer + byteIndex))
 		{
 			TRACE(_T("Download(): TransData(0x%X, 0x%X,0x%X) failed.\n"), \
 				pMxFunc->ImageParameter.PhyRAMAddr4KRL + byteIndex, numBytesToWrite, pBuffer + byteIndex);

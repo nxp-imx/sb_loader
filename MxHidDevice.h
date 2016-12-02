@@ -145,13 +145,7 @@ public:
 	}ImgFormatDCDData, *PImgFormatDCDData;
 
 	enum eTask { INIT = 1, TRANS, EXEC, JUMP, RUN, RUN_PLUGIN };
-	typedef struct _MxFunc
-	{
-		eTask Task;
-		MemoryType   MemType;
-		ImageParameter ImageParameter;
-	}MxFunc, *PMxFunc;
-
+	
 	typedef struct _IvtHeader
 	{
 		unsigned long IvtBarker;
@@ -163,6 +157,15 @@ public:
 		unsigned long Reserved2[2];
 	}IvtHeader, *PIvtHeader;
 
+	typedef struct _MxFunc
+	{
+		eTask Task;
+		MemoryType   MemType;
+		ImageParameter ImageParameter;
+		PIvtHeader pIVT;
+	}MxFunc, *PMxFunc;
+
+	
 	typedef struct _FlashHeader
 	{
 		unsigned long ImageStartAddr;
