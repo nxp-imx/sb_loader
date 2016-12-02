@@ -242,6 +242,8 @@ BOOL MxHidDevice::DCDWrite(PUCHAR DataBuf, UINT RegCount)
 		SDPCmd.dataCount = RegCount;
 		if (this->m_DevType == MX7ULP)
 			SDPCmd.address = 0x2f018000;
+		else if (this->m_DevType == K32H422)
+			SDPCmd.address = 0x8000;
 		else
 			SDPCmd.address = 0x00910000;//IRAM free space
 
