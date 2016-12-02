@@ -262,7 +262,17 @@ int MxRun(CString fwFilename, UCHAR* DataBuf, ULONGLONG fwSize, MxHidDevice::PMx
 
 	if (pMxFunc->Task != MxHidDevice::RUN_PLUGIN)
 	{
-		if (!g_pMxHidDevice->Execute(pMxFunc->ImageParameter.ExecutingAddr))
+		if (pMxFunc->pIVT)
+		{
+			if (!g_pMxHidDevice->Jump(pMxFunc->pIVT->SelfAddr))
+			{
+				TRACE(__FUNCTION__ " ERROR: During RunPlugIn.\n");
+				_tprintf(_T("%s  Failed to run %s to the device.\n"), indent, fwFilename);
+				nRetCode = 3;
+				return nRetCode;
+			}
+		}
+		else if (!g_pMxHidDevice->Execute(pMxFunc->ImageParameter.ExecutingAddr))
 		{
 			TRACE(__FUNCTION__ " ERROR: During RunPlugIn.\n");
 			_tprintf(_T("%s  Failed to run plugin %s to the device.\n"), indent, fwFilename);
