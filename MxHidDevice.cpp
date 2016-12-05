@@ -670,25 +670,30 @@ BOOL MxHidDevice::TransData(UINT address, UINT byteCount, const unsigned char * 
 	return TRUE;
 }
 
-BOOL MxHidDevice::Jump(UINT RAMAddress)
+BOOL MxHidDevice::SkipDCD()
 {
 	SDPCmd SDPCmd;
 
-	if (this->m_DevType >= MX7D) {
-		SDPCmd.command = ROM_KERNEL_CMD_SKIP_DCD_HEADER;
-		SDPCmd.dataCount = 0;
-		SDPCmd.format = 0;
-		SDPCmd.data = 0;
-		SDPCmd.address = 0;
+	SDPCmd.command = ROM_KERNEL_CMD_SKIP_DCD_HEADER;
+	SDPCmd.dataCount = 0;
+	SDPCmd.format = 0;
+	SDPCmd.data = 0;
+	SDPCmd.address = 0;
 
-		if (!SendCmd(&SDPCmd))
-			return FALSE;
+	if (!SendCmd(&SDPCmd))
+		return FALSE;
 
-		if (!GetCmdAck(ROM_OK_ACK))
-		{
-			return FALSE;
-		}
+	if (!GetCmdAck(ROM_OK_ACK))
+	{
+		return FALSE;
 	}
+	
+	return TRUE;
+}
+
+BOOL MxHidDevice::Jump(UINT RAMAddress)
+{
+	SDPCmd SDPCmd;
 
 	SDPCmd.command = ROM_KERNEL_CMD_JUMP_ADDR;
 	SDPCmd.dataCount = 0;

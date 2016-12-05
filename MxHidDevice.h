@@ -181,6 +181,7 @@ public:
 	BOOL Download(UCHAR* pBuffer, ULONGLONG dataCount, PMxFunc pMxFunc);
 	BOOL Execute(UINT32 ImageStartAddr);
 	BOOL Jump(UINT RAMAddress);
+	BOOL SkipDCD();
 	BOOL MxHidDevice::RunPlugIn(UCHAR* pBuffer, ULONGLONG dataCount, PMxFunc pMxFunc);
 	//BOOL Reset();
 
