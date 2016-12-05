@@ -262,7 +262,7 @@ int MxRun(CString fwFilename, UCHAR* DataBuf, ULONGLONG fwSize, MxHidDevice::PMx
 
 	if (pMxFunc->Task != MxHidDevice::RUN_PLUGIN)
 	{
-		if (pMxFunc->pIVT)
+		if (pMxFunc->pIVT && g_pMxHidDevice->SkipDCD())
 		{
 			if (!g_pMxHidDevice->Jump(pMxFunc->pIVT->SelfAddr))
 			{
