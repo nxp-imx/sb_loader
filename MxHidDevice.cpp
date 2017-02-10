@@ -708,6 +708,8 @@ BOOL MxHidDevice::Jump(UINT RAMAddress)
 	if (!GetHABType())
 		return FALSE;
 
+	Sleep(300); // Wait for plug in complete.
+
 	GetDevAck(ROM_OK_ACK);  /*omit rom return error code*/
 
 	//TRACE("*********Jump to Ramkernel successfully!**********\r\n");
