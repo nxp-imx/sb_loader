@@ -289,6 +289,99 @@ BOOL MxHidDevice::DCDWrite(PUCHAR DataBuf, UINT RegCount)
 	return TRUE;
 }
 
+BOOL MxHidDevice::RunDCD(DWORD* pDCDRegion)
+{
+	if (pDCDRegion == NULL)
+		return FALSE;
+
+	//i.e. DCD_BE  0xD2020840              ;DCD_HEADR Tag=0xd2, len=64*8+4+4, ver= 0x40    
+	//i.e. DCD_BE  0xCC020404              ;write dcd cmd headr Tag=0xcc, len=64*8+4, param=4
+	//The first 2 32bits data in DCD region is used to give some info about DCD data.
+	//Here big endian format is used, so it must be converted.
+	if (HAB_TAG_DCD != EndianSwap(*pDCDRegion) >> 24)
+	{
+		TRACE(CString("DCD header tag doesn't match!\n"));
+		return FALSE;
+	}
+
+	if (GetDevType() != MX50)
+	{
+		//The DCD_WRITE command handling was changed from i.MX508.
+		//Now the DCD is  performed by HAB and therefore the format of DCD is the same format as in regular image. 
+		//The DCD_WRITE parameters require size and address. Size is the size of entire DCD file including header. 
+		//Address is the temporary address that USB will use for storing the DCD file before processing.
+
+		DWORD DCDHeader = EndianSwap(*pDCDRegion);
+		//Total dcd data bytes:
+		INT TotalDCDDataCnt = (DCDHeader & 0x00FFFF00) >> 8;
+
+		if (TotalDCDDataCnt > HAB_DCD_BYTES_MAX)
+		{
+			_tprintf(_T("DCD data excceeds max limit!!!\r\n"));
+			return FALSE;
+		}
+
+		if (!DCDWrite((PUCHAR)(pDCDRegion), TotalDCDDataCnt))
+		{
+			_tprintf(_T("Failed to initialize memory!\r\n"));
+			return FALSE;
+		}
+	}
+	else
+	{
+		DWORD DCDDataCount = ((EndianSwap(*pDCDRegion) & 0x00FFFF00) >> 8) / sizeof(DWORD);
+
+		PRomFormatDCDData pRomFormatDCDData = (PRomFormatDCDData)malloc(DCDDataCount * sizeof(RomFormatDCDData));
+		//There are several segments in DCD region, we have to extract DCD data with segment unit.
+		//i.e. Below code shows how non-DCD data is inserted to finish a delay operation, we must avoid counting them in.
+		/*DCD_BE 0xCF001024   ; Tag = 0xCF, Len = 1*12+4=0x10, parm = 4
+
+		; Wait for divider to update
+		DCD_BE 0x53FD408C   ; Address
+		DCD_BE 0x00000004   ; Mask
+		DCD_BE 0x1FFFFFFF   ; Loop
+
+		DCD_BE 0xCC031C04   ; Tag = 0xCC, Len = 99*8+4=0x031c, parm = 4*/
+
+		DWORD CurDCDDataCount = 1, ValidRegCount = 0;
+
+		//Quit if current DCD data count reaches total DCD data count.
+		while (CurDCDDataCount < DCDDataCount)
+		{
+			DWORD DCDCmdHdr = EndianSwap(*(pDCDRegion + CurDCDDataCount));
+			CurDCDDataCount++;
+			if ((DCDCmdHdr >> 24) == HAB_CMD_WRT_DAT)
+			{
+				DWORD DCDDataSegCount = (((DCDCmdHdr & 0x00FFFF00) >> 8) - 4) / sizeof(ImgFormatDCDData);
+				PImgFormatDCDData pImgFormatDCDData = (PImgFormatDCDData)(pDCDRegion + CurDCDDataCount);
+				//Must convert image dcd data format to ROM dcd format.
+				for (DWORD i = 0; i < DCDDataSegCount; i++)
+				{
+					pRomFormatDCDData[ValidRegCount].addr = pImgFormatDCDData[i].Address;
+					pRomFormatDCDData[ValidRegCount].data = pImgFormatDCDData[i].Data;
+					pRomFormatDCDData[ValidRegCount].format = EndianSwap(32);
+					ValidRegCount++;
+					TRACE(CString("{%d,0x%08x,0x%08x},\n"), 32, EndianSwap(pImgFormatDCDData[i].Address), EndianSwap(pImgFormatDCDData[i].Data));
+				}
+				CurDCDDataCount += DCDDataSegCount * sizeof(ImgFormatDCDData) / sizeof(DWORD);
+			}
+			else if ((DCDCmdHdr >> 24) == HAB_CMD_CHK_DAT)
+			{
+				CurDCDDataCount += (((DCDCmdHdr & 0x00FFFF00) >> 8) - 4) / sizeof(DWORD);
+			}
+		}
+
+		if (!DCDWrite((PUCHAR)(pRomFormatDCDData), ValidRegCount))
+		{
+			_tprintf(_T("Failed to initialize memory!\r\n"));
+			free(pRomFormatDCDData);
+			return FALSE;
+		}
+		free(pRomFormatDCDData);
+	}
+	return TRUE;
+}
+
 BOOL MxHidDevice::InitMemoryDevice(MemoryType MemType)
 {
 	RomFormatDCDData * pMemPara = Mx50_LPDDR2;
@@ -404,91 +497,7 @@ BOOL MxHidDevice::RunPlugIn(UCHAR* pBuffer, ULONGLONG dataCount, PMxFunc pMxFunc
 	{
 		//DCD mode
 		DWORD * pDCDRegion = pPlugIn + (pIVT->DCDAddress - pIVT->SelfAddr) / sizeof(DWORD);
-		//i.e. DCD_BE  0xD2020840              ;DCD_HEADR Tag=0xd2, len=64*8+4+4, ver= 0x40    
-		//i.e. DCD_BE  0xCC020404              ;write dcd cmd headr Tag=0xcc, len=64*8+4, param=4
-		//The first 2 32bits data in DCD region is used to give some info about DCD data.
-		//Here big endian format is used, so it must be converted.
-		if (HAB_TAG_DCD != EndianSwap(*pDCDRegion) >> 24)
-		{
-			TRACE(CString("DCD header tag doesn't match!\n"));
-			return FALSE;
-		}
-
-		if (GetDevType() != MX50)
-		{
-			//The DCD_WRITE command handling was changed from i.MX508.
-			//Now the DCD is  performed by HAB and therefore the format of DCD is the same format as in regular image. 
-			//The DCD_WRITE parameters require size and address. Size is the size of entire DCD file including header. 
-			//Address is the temporary address that USB will use for storing the DCD file before processing.
-
-			DWORD DCDHeader = EndianSwap(*pDCDRegion);
-			//Total dcd data bytes:
-			INT TotalDCDDataCnt = (DCDHeader & 0x00FFFF00) >> 8;
-
-			if (TotalDCDDataCnt > HAB_DCD_BYTES_MAX)
-			{
-				_tprintf(_T("DCD data excceeds max limit!!!\r\n"));
-				return FALSE;
-			}
-
-			if (!DCDWrite((PUCHAR)(pDCDRegion), TotalDCDDataCnt))
-			{
-				_tprintf(_T("Failed to initialize memory!\r\n"));
-				return FALSE;
-			}
-		}
-		else
-		{
-			DWORD DCDDataCount = ((EndianSwap(*pDCDRegion) & 0x00FFFF00) >> 8) / sizeof(DWORD);
-
-			PRomFormatDCDData pRomFormatDCDData = (PRomFormatDCDData)malloc(DCDDataCount * sizeof(RomFormatDCDData));
-			//There are several segments in DCD region, we have to extract DCD data with segment unit.
-			//i.e. Below code shows how non-DCD data is inserted to finish a delay operation, we must avoid counting them in.
-			/*DCD_BE 0xCF001024   ; Tag = 0xCF, Len = 1*12+4=0x10, parm = 4
-
-			; Wait for divider to update
-			DCD_BE 0x53FD408C   ; Address
-			DCD_BE 0x00000004   ; Mask
-			DCD_BE 0x1FFFFFFF   ; Loop
-
-			DCD_BE 0xCC031C04   ; Tag = 0xCC, Len = 99*8+4=0x031c, parm = 4*/
-
-			DWORD CurDCDDataCount = 1, ValidRegCount = 0;
-
-			//Quit if current DCD data count reaches total DCD data count.
-			while (CurDCDDataCount < DCDDataCount)
-			{
-				DWORD DCDCmdHdr = EndianSwap(*(pDCDRegion + CurDCDDataCount));
-				CurDCDDataCount++;
-				if ((DCDCmdHdr >> 24) == HAB_CMD_WRT_DAT)
-				{
-					DWORD DCDDataSegCount = (((DCDCmdHdr & 0x00FFFF00) >> 8) - 4) / sizeof(ImgFormatDCDData);
-					PImgFormatDCDData pImgFormatDCDData = (PImgFormatDCDData)(pDCDRegion + CurDCDDataCount);
-					//Must convert image dcd data format to ROM dcd format.
-					for (DWORD i = 0; i < DCDDataSegCount; i++)
-					{
-						pRomFormatDCDData[ValidRegCount].addr = pImgFormatDCDData[i].Address;
-						pRomFormatDCDData[ValidRegCount].data = pImgFormatDCDData[i].Data;
-						pRomFormatDCDData[ValidRegCount].format = EndianSwap(32);
-						ValidRegCount++;
-						TRACE(CString("{%d,0x%08x,0x%08x},\n"), 32, EndianSwap(pImgFormatDCDData[i].Address), EndianSwap(pImgFormatDCDData[i].Data));
-					}
-					CurDCDDataCount += DCDDataSegCount * sizeof(ImgFormatDCDData) / sizeof(DWORD);
-				}
-				else if ((DCDCmdHdr >> 24) == HAB_CMD_CHK_DAT)
-				{
-					CurDCDDataCount += (((DCDCmdHdr & 0x00FFFF00) >> 8) - 4) / sizeof(DWORD);
-				}
-			}
-
-			if (!DCDWrite((PUCHAR)(pRomFormatDCDData), ValidRegCount))
-			{
-				_tprintf(_T("Failed to initialize memory!\r\n"));
-				free(pRomFormatDCDData);
-				return FALSE;
-			}
-			free(pRomFormatDCDData);
-		}
+		return RunDCD(pDCDRegion);
 	}
 	return TRUE;
 }

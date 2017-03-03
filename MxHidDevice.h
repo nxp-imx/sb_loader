@@ -228,6 +228,7 @@ private:
 	UINT m_jumpAddr;
 
 	BOOL MxHidDevice::DCDWrite(PUCHAR DataBuf, UINT RegCount);
+	BOOL MxHidDevice::RunDCD(DWORD *pDCDRegion);
 	ChipFamily_t GetChipFamily();
 	BOOL MxHidDevice::GetCmdAck(UINT RequiredCmdAck);
 	BOOL WriteMemory(UINT address, UINT data, UINT format);
