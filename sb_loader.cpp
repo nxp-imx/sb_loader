@@ -141,7 +141,8 @@ int _tmain(int argc, TCHAR* argv[], TCHAR* envp[])
 				}
 				break;
 			case MxHidDevice::EXEC:
-				if (!g_pMxHidDevice->Execute(MxFunc.ImageParameter.PhyRAMAddr4KRL))
+				if (g_pHidDevice->GetDevType() == MX8QM ||
+					!g_pMxHidDevice->Execute(MxFunc.ImageParameter.PhyRAMAddr4KRL))
 				{
 					TRACE(__FUNCTION__ " ERROR: Exec RAM failed.\n");
 					_tprintf(_T("%  Failed to exec RAM.\n"), indent);
@@ -222,7 +223,7 @@ BOOL SearchDevice()
 	return TRUE;
 }
 
-int MxRun(CString fwFilename, UCHAR* DataBuf, ULONGLONG fwSize, MxHidDevice::PMxFunc pMxFunc)
+int MxSingleImgRun(CString fwFilename, UCHAR* DataBuf, ULONGLONG fwSize, MxHidDevice::PMxFunc pMxFunc)
 {
 	CString indent = _T("");
 	int nRetCode = 0;
@@ -287,6 +288,39 @@ int MxRun(CString fwFilename, UCHAR* DataBuf, ULONGLONG fwSize, MxHidDevice::PMx
 	return nRetCode;
 }
 
+int MxMultiImgRun(UCHAR* DataBuf, ULONGLONG fwSize)
+{
+	int bRet;
+
+	bRet = g_pMxHidDevice->RunMxMultiImg(DataBuf, fwSize);
+	if (!bRet)
+	{
+		TRACE(__FUNCTION__ " ERROR: During MxMultiImgRun.\n");
+		_tprintf(_T(" ERROR: During MxMultiImgRun.\n"));
+		return -1;
+	} else {
+		TRACE(__FUNCTION__ " Ran into image successfully.\n");
+		_tprintf(_T("%s\nExecuted plugin successfully.\n"));
+	}
+	return 0;
+}
+
+int MxRun(CString fwFilename, UCHAR* DataBuf, ULONGLONG fwSize, MxHidDevice::PMxFunc pMxFunc)
+{
+
+	if (g_pHidDevice->GetDevType() != MX8QM)
+		return MxSingleImgRun(fwFilename, DataBuf, fwSize, pMxFunc);
+	else {
+		if (pMxFunc->Task == MxHidDevice::RUN_PLUGIN)
+		{
+			TRACE(__FUNCTION__ "RUN_PLUGIN is not supported for this device\n");
+			_tprintf(_T("RUN_PLUGIN is not supportedfor this device\n"));
+			return -1;
+		}
+
+		return MxMultiImgRun(DataBuf, fwSize);
+	}
+}
 
 int StDownload(CString fwFilename, UCHAR* DataBuf, ULONGLONG fwSize)
 {

@@ -56,6 +56,7 @@
 
 #define IVT_BARKER_HEADER      0x402000D1
 #define IVT_BARKER2_HEADER      0x412000D1
+#define MX8_IVT_BARKER_HEADER	0x434000D1
 #define ROM_TRANSFER_SIZE	   0x400
 
 #define FLASH_HEADER_SIZE	   0x20
@@ -67,6 +68,12 @@
 #define HAB_CMD_CHK_DAT        0xcf  /**< Check Data */
 #define HAB_TAG_DCD            0xd2       /**< Device Configuration Data */
 #define HAB_DCD_BYTES_MAX     1768 
+
+// Multi-image suppport
+#define MX8_MAX_IMAGES_COUNT			4
+// 8KB Initial Image size = IVT1 + IVT2 + DCD + CSF + BootDatas+ Img info
+#define MX8_INITIAL_IMAGE_SIZE			0x2000
+#define MX8_IMG_OFFSET				0x8000
 
 // Address ranges for Production parts: 
 
@@ -127,6 +134,26 @@ public:
 		unsigned long PluginFlag;
 	}BootData, *PBootData;
 
+	typedef struct _SubImageInfo
+	{
+		unsigned long long	Offset;
+		unsigned long long	ImageAddr;
+		unsigned long long	ImageEntry;
+		unsigned long		ImageSize;
+		unsigned long		ImageFlag;
+	}SubImageInfo;
+
+	typedef struct _BootDataV2
+	{
+		unsigned long	NrImages; // Number of images
+		unsigned long	BootDataSize;
+		unsigned long	Reserved;
+		SubImageInfo	Images[MX8_MAX_IMAGES_COUNT];
+		SubImageInfo	SCD;
+		SubImageInfo	CSF;
+		SubImageInfo	ImgReserved;
+	}BootDataV2, *PBootDataV2;
+
 	//DCD binary data format:
 	//4 bytes for format	4 bytes for register1 address	4 bytes for register1 value to set
 	//4 bytes for format	4 bytes for register2 address	4 bytes for register2 value to set
@@ -157,6 +184,18 @@ public:
 		unsigned long Reserved2[2];
 	}IvtHeader, *PIvtHeader;
 
+	typedef struct _IvtHeaderV2
+	{
+		unsigned long		IvtBarker;
+		unsigned long		Reserved;
+		unsigned long long	DCDAddress;
+		unsigned long long	BootData;
+		unsigned long long	SelfAddr;
+		unsigned long long	CSFAddr;
+		unsigned long long	SCDAddr;
+		unsigned long long	Reserved2[2];
+	}IvtHeaderV2, *PIvtHeaderV2;
+
 	typedef struct _MxFunc
 	{
 		eTask Task;
@@ -183,6 +222,7 @@ public:
 	BOOL Jump(UINT RAMAddress);
 	BOOL SkipDCD();
 	DWORD GetIvtOffset(DWORD *start, ULONGLONG dataCount);
+	BOOL RunMxMultiImg(UCHAR* pBuffer, ULONGLONG dataCount);
 	BOOL MxHidDevice::RunPlugIn(UCHAR* pBuffer, ULONGLONG dataCount, PMxFunc pMxFunc);
 	//BOOL Reset();
 

@@ -8,6 +8,7 @@
 
 #pragma once
 #include "stdafx.h"
+#include <assert.h>
 #include <basetyps.h>
 #include <setupapi.h>
 #include <initguid.h>
@@ -244,6 +245,9 @@ BOOL MxHidDevice::DCDWrite(PUCHAR DataBuf, UINT RegCount)
 			SDPCmd.address = 0x2f018000;
 		else if (this->m_DevType == K32H422)
 			SDPCmd.address = 0x8000;
+		else if (this->m_DevType == MX8QM)
+			SDPCmd.address = 0x30fe0000;
+
 		else
 			SDPCmd.address = 0x00910000;//IRAM free space
 
@@ -413,7 +417,8 @@ DWORD MxHidDevice::GetIvtOffset(DWORD *start, ULONGLONG dataCount)
 
 	while (ImgIVTOffset < dataCount &&
 		(start[ImgIVTOffset / sizeof(DWORD)] != IVT_BARKER_HEADER &&
-		start[ImgIVTOffset / sizeof(DWORD)] != IVT_BARKER2_HEADER
+		start[ImgIVTOffset / sizeof(DWORD)] != IVT_BARKER2_HEADER &&
+		start[ImgIVTOffset / sizeof(DWORD)] != MX8_IVT_BARKER_HEADER
 		))
 		ImgIVTOffset += 0x100;
 
@@ -506,6 +511,73 @@ BOOL MxHidDevice::RunPlugIn(UCHAR* pBuffer, ULONGLONG dataCount, PMxFunc pMxFunc
 		return RunDCD(pDCDRegion);
 	}
 	return TRUE;
+}
+
+BOOL MxHidDevice::RunMxMultiImg(UCHAR* pBuffer, ULONGLONG dataCount)
+{
+	DWORD *pImg = (DWORD*)pBuffer;
+	DWORD * pDCDRegion;
+	DWORD ImageOffset = 0;
+	DWORD ImgIVTOffset = GetIvtOffset(pImg, MX8_INITIAL_IMAGE_SIZE);
+	PIvtHeaderV2 pIVT = NULL, pIVT2 = NULL;
+	PBootDataV2 pBootData1 = NULL, pBootData2 = NULL;
+	unsigned int i;
+
+	//if we did not find a valid IVT within INITIAL_IMAGE_SIZE we have a non zero ImageOffset
+	if (!ImgIVTOffset)
+	{
+		ImageOffset = MX8_IMG_OFFSET;
+		ImgIVTOffset = GetIvtOffset(pImg, dataCount - MX8_IMG_OFFSET);
+	}
+
+	pImg += ImageOffset / sizeof(DWORD);
+	if (pImg[ImgIVTOffset] != MX8_IVT_BARKER_HEADER)
+	{
+		TRACE(_T("Not a valid image.\n"));
+		return FALSE;
+	}
+
+	pIVT = (PIvtHeaderV2)(pImg + ImgIVTOffset / sizeof(DWORD));
+	pIVT2 = pIVT + 1; // The IVT for the second container is immediatly after IVT1
+
+	pBootData1 = (PBootDataV2)((DWORD*)pIVT + (pIVT->BootData - pIVT->SelfAddr) / sizeof(DWORD));
+	pBootData2 = (PBootDataV2)((DWORD*)pIVT2 + (pIVT2->BootData - pIVT2->SelfAddr) / sizeof(DWORD));
+
+	if (pIVT->DCDAddress)
+	{
+		pDCDRegion = (DWORD*)pIVT + (pIVT->DCDAddress - pIVT->SelfAddr) / sizeof(DWORD);
+		if (!RunDCD(pDCDRegion))
+			return FALSE;
+	}
+
+	// Load Initial Image
+	assert((pIVT->SelfAddr - ImgIVTOffset) < (1ULL << 32));
+	if (!Download((UCHAR*)pImg, MX8_INITIAL_IMAGE_SIZE, (UINT)(pIVT->SelfAddr - ImgIVTOffset)))
+		return FALSE;
+
+	//Load all the images in the first container to their respective Address
+	for (i = 0; i < (pBootData1->NrImages); ++i) {
+		assert(pBootData1->Images[i].ImageAddr < (1ULL << 32));
+		if (!Download((UCHAR*)pImg + pBootData1->Images[i].Offset,
+			pBootData1->Images[i].ImageSize,
+			(UINT)pBootData1->Images[i].ImageAddr))
+			return FALSE;
+	}
+
+	//Load all the images in the second container to their respective Address
+	for (i = 0; i < (pBootData2->NrImages); ++i) {
+		assert(pBootData2->Images[i].ImageAddr < (1ULL << 32));
+		if (!Download((UCHAR*)pImg + pBootData2->Images[i].Offset,
+			pBootData2->Images[i].ImageSize,
+			(UINT)pBootData2->Images[i].ImageAddr))
+			return FALSE;
+	}
+
+	if (!SkipDCD())
+		return FALSE;
+
+	assert(pIVT->SelfAddr < (1ULL << 32));
+	return Jump((UINT)pIVT->SelfAddr);
 }
 
 BOOL MxHidDevice::Download(UCHAR* pBuffer, ULONGLONG dataCount, UINT RAMAddress)
