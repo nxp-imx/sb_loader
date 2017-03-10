@@ -502,22 +502,20 @@ BOOL MxHidDevice::RunPlugIn(UCHAR* pBuffer, ULONGLONG dataCount, PMxFunc pMxFunc
 	return TRUE;
 }
 
-BOOL MxHidDevice::Download(UCHAR* pBuffer, ULONGLONG dataCount, PMxFunc pMxFunc)
+BOOL MxHidDevice::Download(UCHAR* pBuffer, ULONGLONG dataCount, UINT RAMAddress)
 {
 	//if(pMxFunc->Task == TRANS)
 	DWORD byteIndex, numBytesToWrite = 0;
-
-	UINT start = pMxFunc->ImageParameter.PhyRAMAddr4KRL;
 
 	for (byteIndex = 0; byteIndex < dataCount; byteIndex += numBytesToWrite)
 	{
 		// Get some data
 		numBytesToWrite = min(MAX_SIZE_PER_DOWNLOAD_COMMAND, (DWORD)dataCount - byteIndex);
 
-		if (!TransData(start + byteIndex, numBytesToWrite, pBuffer + byteIndex))
+		if (!TransData(RAMAddress + byteIndex, numBytesToWrite, pBuffer + byteIndex))
 		{
 			TRACE(_T("Download(): TransData(0x%X, 0x%X,0x%X) failed.\n"), \
-				pMxFunc->ImageParameter.PhyRAMAddr4KRL + byteIndex, numBytesToWrite, pBuffer + byteIndex);
+				RAMAddress + byteIndex, numBytesToWrite, pBuffer + byteIndex);
 			return FALSE;
 		}
 	}
