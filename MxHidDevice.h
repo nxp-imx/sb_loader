@@ -182,6 +182,7 @@ public:
 	BOOL Execute(UINT32 ImageStartAddr);
 	BOOL Jump(UINT RAMAddress);
 	BOOL SkipDCD();
+	DWORD GetIvtOffset(DWORD *start, ULONGLONG dataCount);
 	BOOL MxHidDevice::RunPlugIn(UCHAR* pBuffer, ULONGLONG dataCount, PMxFunc pMxFunc);
 	//BOOL Reset();
 

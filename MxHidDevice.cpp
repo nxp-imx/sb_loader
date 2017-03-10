@@ -406,26 +406,32 @@ BOOL MxHidDevice::InitMemoryDevice(MemoryType MemType)
 }
 #endif
 
+DWORD MxHidDevice::GetIvtOffset(DWORD *start, ULONGLONG dataCount)
+{
+	//Search for a valid IVT Code starting from the given address
+	DWORD ImgIVTOffset = 0;
+
+	while (ImgIVTOffset < dataCount &&
+		(start[ImgIVTOffset / sizeof(DWORD)] != IVT_BARKER_HEADER &&
+		start[ImgIVTOffset / sizeof(DWORD)] != IVT_BARKER2_HEADER
+		))
+		ImgIVTOffset += 0x100;
+
+	if (ImgIVTOffset >= dataCount)
+		return FALSE;
+
+	return ImgIVTOffset;
+}
 
 BOOL MxHidDevice::RunPlugIn(UCHAR* pBuffer, ULONGLONG dataCount, PMxFunc pMxFunc)
 {
 	DWORD * pPlugIn = NULL;
-	DWORD ImgIVTOffset = 0;
+	DWORD ImgIVTOffset = GetIvtOffset((DWORD*)pBuffer, dataCount);
 	DWORD PlugInAddr = 0;
 	PIvtHeader pIVT = NULL, pIVT2 = NULL;
 
 	//Search for IVT
 	pPlugIn = (DWORD *)pBuffer;
-
-	//ImgIVTOffset indicates the IVT's offset from the beginning of the image.
-	while (ImgIVTOffset < dataCount &&
-		(pPlugIn[ImgIVTOffset / sizeof(DWORD)] != IVT_BARKER_HEADER &&
-			pPlugIn[ImgIVTOffset / sizeof(DWORD)] != IVT_BARKER2_HEADER
-			))
-		ImgIVTOffset += 0x100;
-
-	if (ImgIVTOffset >= dataCount)
-		return FALSE;
 
 	//Now we find IVT
 	pPlugIn += ImgIVTOffset / sizeof(DWORD);
