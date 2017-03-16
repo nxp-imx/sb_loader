@@ -178,10 +178,11 @@ public:
 	//int GetRKLVersion(CString& fmodel, int& len, int& mxType);
 	BOOL InitMemoryDevice(MemoryType MemType);
 	//BOOL ProgramFlash(std::ifstream& file, UINT address, UINT cmdID, UINT flags, Device::UI_Callback callback);
-	BOOL Download(UCHAR* pBuffer, ULONGLONG dataCount, PMxFunc pMxFunc);
+	BOOL Download(UCHAR* pBuffer, ULONGLONG dataCount, UINT RAMAddress);
 	BOOL Execute(UINT32 ImageStartAddr);
 	BOOL Jump(UINT RAMAddress);
 	BOOL SkipDCD();
+	DWORD GetIvtOffset(DWORD *start, ULONGLONG dataCount);
 	BOOL MxHidDevice::RunPlugIn(UCHAR* pBuffer, ULONGLONG dataCount, PMxFunc pMxFunc);
 	//BOOL Reset();
 
@@ -228,6 +229,7 @@ private:
 	UINT m_jumpAddr;
 
 	BOOL MxHidDevice::DCDWrite(PUCHAR DataBuf, UINT RegCount);
+	BOOL MxHidDevice::RunDCD(DWORD *pDCDRegion);
 	ChipFamily_t GetChipFamily();
 	BOOL MxHidDevice::GetCmdAck(UINT RequiredCmdAck);
 	BOOL WriteMemory(UINT address, UINT data, UINT format);

@@ -128,7 +128,7 @@ int _tmain(int argc, TCHAR* argv[], TCHAR* envp[])
 				_tprintf(_T("%sMX device initialized.\n"), indent);
 				break;
 			case MxHidDevice::TRANS:
-				if (!g_pMxHidDevice->Download(DataBuf, fwSize, &MxFunc))
+				if (!g_pMxHidDevice->Download(DataBuf, fwSize, MxFunc.ImageParameter.PhyRAMAddr4KRL))
 				{
 					TRACE(__FUNCTION__ " ERROR: During download.\n");
 					_tprintf(_T("%s  Failed to download %s to the device.\n"), indent, fwFilename);
@@ -247,7 +247,7 @@ int MxRun(CString fwFilename, UCHAR* DataBuf, ULONGLONG fwSize, MxHidDevice::PMx
 	//
 	// Load firmware
 	//
-	bRet = g_pMxHidDevice->Download(DataBuf, fwSize, pMxFunc);
+	bRet = g_pMxHidDevice->Download(DataBuf, fwSize, pMxFunc->ImageParameter.PhyRAMAddr4KRL);
 	if (!bRet)
 	{
 		TRACE(__FUNCTION__ " ERROR: During download.\n");
