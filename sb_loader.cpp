@@ -167,6 +167,26 @@ int _tmain(int argc, TCHAR* argv[], TCHAR* envp[])
 			case MxHidDevice::RUN:
 				nRetCode = MxRun(fwFilename, DataBuf, fwSize, &MxFunc);
 				break;
+			case MxHidDevice::READ:
+			{
+				UINT value;
+				if (!g_pMxHidDevice->RegRead(MxFunc.Addr, &value))
+				{
+					_tprintf(_T("Read failure\n"));
+					nRetCode = 5;
+					return nRetCode;
+				}
+				_tprintf(_T("0x%08X: 0x%08x"), MxFunc.Addr, value);
+				break;
+			}
+			case MxHidDevice::WRITE:
+				if (!g_pMxHidDevice->RegWrite(MxFunc.Addr, MxFunc.Value))
+				{
+					_tprintf(_T("Write failure\n"));
+					nRetCode = 5;
+					return nRetCode;
+				}
+				break;
 			default:
 				break;
 			}
@@ -308,7 +328,7 @@ int MxMultiImgRun(UCHAR* DataBuf, ULONGLONG fwSize)
 int MxRun(CString fwFilename, UCHAR* DataBuf, ULONGLONG fwSize, MxHidDevice::PMxFunc pMxFunc)
 {
 
-	if (g_pHidDevice->GetDevType() != MX8QM)
+	if (g_pHidDevice->GetDevType() < MX8QM)
 		return MxSingleImgRun(fwFilename, DataBuf, fwSize, pMxFunc);
 	else {
 		if (pMxFunc->Task == MxHidDevice::RUN_PLUGIN)
@@ -424,6 +444,19 @@ bool ProcessCommandLine(int argc, TCHAR* argv[], CString& fwFilename, ExtendedFu
 		else if (arg.CompareNoCase(_T("-nojump")) == 0 && i <= argc - 1)
 		{
 			pMxFunc->Task = MxHidDevice::RUN_PLUGIN;
+		}
+		else if (arg.CompareNoCase(_T("-rd")) == 0 && i <= argc - 1)
+		{
+			pMxFunc->Task = MxHidDevice::READ;
+			pMxFunc->Addr = String2Uint(argv[++i]);
+			return true;
+		}
+		else if (arg.CompareNoCase(_T("-wr")) == 0 && i <= argc - 1)
+		{
+			pMxFunc->Task = MxHidDevice::WRITE;
+			pMxFunc->Addr = String2Uint(argv[++i]);
+			pMxFunc->Value = String2Uint(argv[++i]);
+			return true;
 		}
 		else if (1 < argc)
 		{

@@ -57,6 +57,8 @@
 #define IVT_BARKER_HEADER      0x402000D1
 #define IVT_BARKER2_HEADER      0x412000D1
 #define MX8_IVT_BARKER_HEADER	0x434000D1
+#define MX8_IVT2_BARKER_HEADER  0x433000de
+
 #define ROM_TRANSFER_SIZE	   0x400
 
 #define FLASH_HEADER_SIZE	   0x20
@@ -74,6 +76,8 @@
 // 8KB Initial Image size = IVT1 + IVT2 + DCD + CSF + BootDatas+ Img info
 #define MX8_INITIAL_IMAGE_SIZE			0x2000
 #define MX8_IMG_OFFSET				0x8000
+
+#define IVT_OFFSET_SD	0x400
 
 // Address ranges for Production parts: 
 
@@ -147,6 +151,7 @@ public:
 	{
 		unsigned long	NrImages; // Number of images
 		unsigned long	BootDataSize;
+		unsigned long   BootDataFlag;
 		unsigned long	Reserved;
 		SubImageInfo	Images[MX8_MAX_IMAGES_COUNT];
 		SubImageInfo	SCD;
@@ -171,7 +176,7 @@ public:
 		unsigned long Data;
 	}ImgFormatDCDData, *PImgFormatDCDData;
 
-	enum eTask { INIT = 1, TRANS, EXEC, JUMP, RUN, RUN_PLUGIN };
+	enum eTask { INIT = 1, TRANS, EXEC, JUMP, RUN, RUN_PLUGIN, READ, WRITE};
 	
 	typedef struct _IvtHeader
 	{
@@ -192,7 +197,10 @@ public:
 		unsigned long long	BootData;
 		unsigned long long	SelfAddr;
 		unsigned long long	CSFAddr;
-		unsigned long long	SCDAddr;
+		union {
+			unsigned long long	SCDAddr;
+			unsigned long long	Next;
+		};
 		unsigned long long	Reserved2[2];
 	}IvtHeaderV2, *PIvtHeaderV2;
 
@@ -202,6 +210,8 @@ public:
 		MemoryType   MemType;
 		ImageParameter ImageParameter;
 		PIvtHeader pIVT;
+		unsigned int Addr;
+		unsigned int Value;
 	}MxFunc, *PMxFunc;
 
 	
@@ -220,6 +230,8 @@ public:
 	BOOL Download(UCHAR* pBuffer, ULONGLONG dataCount, UINT RAMAddress);
 	BOOL Execute(UINT32 ImageStartAddr);
 	BOOL Jump(UINT RAMAddress);
+	BOOL RegRead(UINT address, UINT *value);
+	BOOL RegWrite(UINT address, UINT value);
 	BOOL SkipDCD();
 	DWORD GetIvtOffset(DWORD *start, ULONGLONG dataCount);
 	BOOL RunMxMultiImg(UCHAR* pBuffer, ULONGLONG dataCount);

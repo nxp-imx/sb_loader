@@ -107,7 +107,7 @@ BOOL MxHidDevice::SendData(const unsigned char * DataBuf, UINT ByteCnt)
 	memcpy(m_pWriteReport->Payload, DataBuf, ByteCnt);
 
 	m_pWriteReport->ReportId = REPORT_ID_DATA;
-	if (Write((unsigned char *)m_pWriteReport, m_Capabilities.OutputReportByteLength) != ERROR_SUCCESS)
+	if (Write((unsigned char *)m_pWriteReport, ByteCnt+1) != ERROR_SUCCESS)
 		return FALSE;
 
 	return TRUE;
@@ -245,9 +245,8 @@ BOOL MxHidDevice::DCDWrite(PUCHAR DataBuf, UINT RegCount)
 			SDPCmd.address = 0x2f018000;
 		else if (this->m_DevType == K32H422)
 			SDPCmd.address = 0x8000;
-		else if (this->m_DevType == MX8QM)
+		else if (this->m_DevType == MX8QM || this->m_DevType == MX8QXP)
 			SDPCmd.address = 0x30fe0000;
-
 		else
 			SDPCmd.address = 0x00910000;//IRAM free space
 
@@ -418,12 +417,13 @@ DWORD MxHidDevice::GetIvtOffset(DWORD *start, ULONGLONG dataCount)
 	while (ImgIVTOffset < dataCount &&
 		(start[ImgIVTOffset / sizeof(DWORD)] != IVT_BARKER_HEADER &&
 		start[ImgIVTOffset / sizeof(DWORD)] != IVT_BARKER2_HEADER &&
-		start[ImgIVTOffset / sizeof(DWORD)] != MX8_IVT_BARKER_HEADER
+		start[ImgIVTOffset / sizeof(DWORD)] != MX8_IVT_BARKER_HEADER &&
+		start[ImgIVTOffset / sizeof(DWORD)] != MX8_IVT2_BARKER_HEADER
 		))
 		ImgIVTOffset += 0x100;
 
 	if (ImgIVTOffset >= dataCount)
-		return FALSE;
+		return -1;
 
 	return ImgIVTOffset;
 }
@@ -524,21 +524,29 @@ BOOL MxHidDevice::RunMxMultiImg(UCHAR* pBuffer, ULONGLONG dataCount)
 	unsigned int i;
 
 	//if we did not find a valid IVT within INITIAL_IMAGE_SIZE we have a non zero ImageOffset
-	if (!ImgIVTOffset)
+	if (ImgIVTOffset < 0)
 	{
-		ImageOffset = MX8_IMG_OFFSET;
-		ImgIVTOffset = GetIvtOffset(pImg, dataCount - MX8_IMG_OFFSET);
+		TRACE(_T("Not a valid image.\n"));
+		return FALSE;
 	}
 
 	pImg += ImageOffset / sizeof(DWORD);
-	if (pImg[ImgIVTOffset] != MX8_IVT_BARKER_HEADER)
+	if (pImg[ImgIVTOffset] != MX8_IVT_BARKER_HEADER && pImg[ImgIVTOffset] != MX8_IVT2_BARKER_HEADER)
 	{
 		TRACE(_T("Not a valid image.\n"));
 		return FALSE;
 	}
 
 	pIVT = (PIvtHeaderV2)(pImg + ImgIVTOffset / sizeof(DWORD));
-	pIVT2 = pIVT + 1; // The IVT for the second container is immediatly after IVT1
+
+	if (pImg[ImgIVTOffset] == MX8_IVT2_BARKER_HEADER)
+	{
+		pIVT2 = (PIvtHeaderV2)(pImg + ImgIVTOffset + pIVT->Next / sizeof(DWORD));
+	}
+	else
+	{
+		pIVT2 = pIVT + 1; // The IVT for the second container is immediatly after IVT1
+	}
 
 	pBootData1 = (PBootDataV2)((DWORD*)pIVT + (pIVT->BootData - pIVT->SelfAddr) / sizeof(DWORD));
 	pBootData2 = (PBootDataV2)((DWORD*)pIVT2 + (pIVT2->BootData - pIVT2->SelfAddr) / sizeof(DWORD));
@@ -552,13 +560,13 @@ BOOL MxHidDevice::RunMxMultiImg(UCHAR* pBuffer, ULONGLONG dataCount)
 
 	// Load Initial Image
 	assert((pIVT->SelfAddr - ImgIVTOffset) < (1ULL << 32));
-	if (!Download((UCHAR*)pImg, MX8_INITIAL_IMAGE_SIZE, (UINT)(pIVT->SelfAddr - ImgIVTOffset)))
-		return FALSE;
+	//if (!Download((UCHAR*)pImg, MX8_INITIAL_IMAGE_SIZE, (UINT)(pIVT->SelfAddr - ImgIVTOffset)))
+	//	return FALSE;
 
 	//Load all the images in the first container to their respective Address
 	for (i = 0; i < (pBootData1->NrImages); ++i) {
 		assert(pBootData1->Images[i].ImageAddr < (1ULL << 32));
-		if (!Download((UCHAR*)pImg + pBootData1->Images[i].Offset,
+		if (!Download((UCHAR*)pImg + pBootData1->Images[i].Offset - IVT_OFFSET_SD,
 			pBootData1->Images[i].ImageSize,
 			(UINT)pBootData1->Images[i].ImageAddr))
 			return FALSE;
@@ -567,7 +575,7 @@ BOOL MxHidDevice::RunMxMultiImg(UCHAR* pBuffer, ULONGLONG dataCount)
 	//Load all the images in the second container to their respective Address
 	for (i = 0; i < (pBootData2->NrImages); ++i) {
 		assert(pBootData2->Images[i].ImageAddr < (1ULL << 32));
-		if (!Download((UCHAR*)pImg + pBootData2->Images[i].Offset,
+		if (!Download((UCHAR*)pImg + pBootData2->Images[i].Offset - IVT_OFFSET_SD,
 			pBootData2->Images[i].ImageSize,
 			(UINT)pBootData2->Images[i].ImageAddr))
 			return FALSE;
@@ -720,6 +728,11 @@ BOOL MxHidDevice::TransData(UINT address, UINT byteCount, const unsigned char * 
 {
 	SDPCmd SDPCmd;
 
+	UINT MaxHidTransSize = m_Capabilities.OutputReportByteLength - 1;
+	UINT TransSize;
+
+	byteCount = ((byteCount + MaxHidTransSize) / MaxHidTransSize) * MaxHidTransSize;
+
 	SDPCmd.command = ROM_KERNEL_CMD_WR_FILE;
 	SDPCmd.dataCount = byteCount;
 	SDPCmd.format = 0;
@@ -731,12 +744,12 @@ BOOL MxHidDevice::TransData(UINT address, UINT byteCount, const unsigned char * 
 
 	Sleep(10);
 
-	UINT MaxHidTransSize = m_Capabilities.OutputReportByteLength - 1;
-	UINT TransSize;
 
 	while (byteCount > 0)
 	{
 		TransSize = (byteCount > MaxHidTransSize) ? MaxHidTransSize : byteCount;
+		if (TransSize < MaxHidTransSize)
+			Sleep(100);
 
 		if (!SendData(pBuf, TransSize))
 			return FALSE;
@@ -799,4 +812,14 @@ BOOL MxHidDevice::Jump(UINT RAMAddress)
 
 	//TRACE("*********Jump to Ramkernel successfully!**********\r\n");
 	return TRUE;
+}
+
+BOOL MxHidDevice::RegRead(UINT address, UINT *value)
+{
+	return ReadData(address, 4, (unsigned char *)value);
+}
+
+BOOL MxHidDevice::RegWrite(UINT address, UINT value)
+{
+	return TransData(address, 4, (unsigned char *)&value);
 }
