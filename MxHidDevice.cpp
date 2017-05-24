@@ -107,7 +107,7 @@ BOOL MxHidDevice::SendData(const unsigned char * DataBuf, UINT ByteCnt)
 	memcpy(m_pWriteReport->Payload, DataBuf, ByteCnt);
 
 	m_pWriteReport->ReportId = REPORT_ID_DATA;
-	if (Write((unsigned char *)m_pWriteReport, ByteCnt+1) != ERROR_SUCCESS)
+	if (Write((unsigned char *)m_pWriteReport, m_Capabilities.OutputReportByteLength) != ERROR_SUCCESS)
 		return FALSE;
 
 	return TRUE;
@@ -246,7 +246,7 @@ BOOL MxHidDevice::DCDWrite(PUCHAR DataBuf, UINT RegCount)
 		else if (this->m_DevType == K32H422)
 			SDPCmd.address = 0x8000;
 		else if (this->m_DevType == MX8QM || this->m_DevType == MX8QXP)
-			SDPCmd.address = 0x30fe0000;
+			SDPCmd.address = 0x20000000 ;
 		else
 			SDPCmd.address = 0x00910000;//IRAM free space
 
