@@ -246,7 +246,7 @@ BOOL MxHidDevice::DCDWrite(PUCHAR DataBuf, UINT RegCount)
 		else if (this->m_DevType == K32H422)
 			SDPCmd.address = 0x8000;
 		else if (this->m_DevType == MX8QM || this->m_DevType == MX8QXP)
-			SDPCmd.address = 0x20000000 ;
+			SDPCmd.address = 0x2000e400 ;
 		else
 			SDPCmd.address = 0x00910000;//IRAM free space
 
@@ -557,6 +557,7 @@ BOOL MxHidDevice::RunMxMultiImg(UCHAR* pBuffer, ULONGLONG dataCount)
 	pBootData1 = (PBootDataV2)((DWORD*)pIVT + (pIVT->BootData - pIVT->SelfAddr) / sizeof(DWORD));
 	pBootData2 = (PBootDataV2)((DWORD*)pIVT2 + (pIVT2->BootData - pIVT2->SelfAddr) / sizeof(DWORD));
 
+
 	if (pIVT->DCDAddress)
 	{
 		pDCDRegion = (DWORD*)pIVT + (pIVT->DCDAddress - pIVT->SelfAddr) / sizeof(DWORD);
@@ -566,8 +567,8 @@ BOOL MxHidDevice::RunMxMultiImg(UCHAR* pBuffer, ULONGLONG dataCount)
 
 	// Load Initial Image
 	assert((pIVT->SelfAddr - ImgIVTOffset) < (1ULL << 32));
-	//if (!Download((UCHAR*)pImg, MX8_INITIAL_IMAGE_SIZE, (UINT)(pIVT->SelfAddr - ImgIVTOffset)))
-	//	return FALSE;
+	if (!Download((UCHAR*)pImg, MX8_INITIAL_IMAGE_SIZE, (UINT)(pIVT->SelfAddr - ImgIVTOffset)))
+		return FALSE;
 
 	//Load all the images in the first container to their respective Address
 	for (i = 0; i < (pBootData1->NrImages); ++i) {
@@ -737,7 +738,7 @@ BOOL MxHidDevice::TransData(UINT address, UINT byteCount, const unsigned char * 
 	UINT MaxHidTransSize = m_Capabilities.OutputReportByteLength - 1;
 	UINT TransSize;
 
-	byteCount = ((byteCount + MaxHidTransSize) / MaxHidTransSize) * MaxHidTransSize;
+	byteCount = ((byteCount + MaxHidTransSize -1) / MaxHidTransSize) * MaxHidTransSize;
 
 	SDPCmd.command = ROM_KERNEL_CMD_WR_FILE;
 	SDPCmd.dataCount = byteCount;
@@ -754,8 +755,6 @@ BOOL MxHidDevice::TransData(UINT address, UINT byteCount, const unsigned char * 
 	while (byteCount > 0)
 	{
 		TransSize = (byteCount > MaxHidTransSize) ? MaxHidTransSize : byteCount;
-		if (TransSize < MaxHidTransSize)
-			Sleep(100);
 
 		if (!SendData(pBuf, TransSize))
 			return FALSE;

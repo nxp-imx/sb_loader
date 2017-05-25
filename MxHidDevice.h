@@ -74,7 +74,7 @@
 // Multi-image suppport
 #define MX8_MAX_IMAGES_COUNT			4
 // 8KB Initial Image size = IVT1 + IVT2 + DCD + CSF + BootDatas+ Img info
-#define MX8_INITIAL_IMAGE_SIZE			0x2000
+#define MX8_INITIAL_IMAGE_SIZE			0x1000
 #define MX8_IMG_OFFSET				0x8000
 
 #define IVT_OFFSET_SD	0x400
