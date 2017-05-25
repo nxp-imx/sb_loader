@@ -250,6 +250,12 @@ BOOL MxHidDevice::DCDWrite(PUCHAR DataBuf, UINT RegCount)
 		else
 			SDPCmd.address = 0x00910000;//IRAM free space
 
+		if (this->m_DevType == MX8QM || this->m_DevType == MX8QXP)
+		{
+			//write first to avoid ECC error.
+			Download(DataBuf, 0x1000, SDPCmd.address);
+		}
+
 		if (!SendCmd(&SDPCmd))
 			return FALSE;
 
