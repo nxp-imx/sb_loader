@@ -79,6 +79,8 @@
 
 #define IVT_OFFSET_SD	0x400
 
+#define ROM_ECC_SIZE_ALIGN 0x400
+
 // Address ranges for Production parts: 
 
 /// <summary>

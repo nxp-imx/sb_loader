@@ -93,6 +93,7 @@ int _tmain(int argc, TCHAR* argv[], TCHAR* envp[])
 			}
 
 			fwSize = fwFile.GetLength();
+			fwSize = (fwSize + ROM_ECC_SIZE_ALIGN - 1) / ROM_ECC_SIZE_ALIGN * ROM_ECC_SIZE_ALIGN;
 			DataBuf = (UCHAR*)malloc((size_t)fwSize);
 			fwFile.Read(DataBuf, (UINT)fwSize);
 			fwFile.Close();
