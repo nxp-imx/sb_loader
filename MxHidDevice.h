@@ -238,6 +238,17 @@ public:
 	DWORD GetIvtOffset(DWORD *start, ULONGLONG dataCount);
 	BOOL RunMxMultiImg(UCHAR* pBuffer, ULONGLONG dataCount);
 	BOOL MxHidDevice::RunPlugIn(UCHAR* pBuffer, ULONGLONG dataCount, PMxFunc pMxFunc);
+
+	unsigned long long SCUViewAddr(unsigned long long addr)
+	{
+		if (addr >= 0x30000000 && addr < 0x40000000)
+		{
+			if (this->GetDevType() == MX8QM)
+				return addr - 0x11000000;
+		}
+
+		return addr;
+	}
 	//BOOL Reset();
 
 	// PROPERTIES
