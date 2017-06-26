@@ -565,22 +565,28 @@ BOOL MxHidDevice::RunMxMultiImg(UCHAR* pBuffer, ULONGLONG dataCount)
 	if (pIVT->DCDAddress)
 	{
 		pDCDRegion = (DWORD*)pIVT + (pIVT->DCDAddress - pIVT->SelfAddr) / sizeof(DWORD);
-		if (!RunDCD(pDCDRegion))
+		if (!RunDCD(pDCDRegion)){
+			_tprintf(_T("Failed to download DCDs!\r\n"));
 			return FALSE;
+		}
 	}
 
 	// Load Initial Image
 	assert((pIVT->SelfAddr - ImgIVTOffset) < (1ULL << 32));
-	if (!Download((UCHAR*)pImg, MX8_INITIAL_IMAGE_SIZE, (UINT)(SCUViewAddr(pIVT->SelfAddr) - ImgIVTOffset)))
+	if (!Download((UCHAR*)pImg, MX8_INITIAL_IMAGE_SIZE, (UINT)(SCUViewAddr(pIVT->SelfAddr) - ImgIVTOffset))){
+		_tprintf(_T("Failed to download Initial image headers!\r\n"));
 		return FALSE;
+	}
 
 	//Load all the images in the first container to their respective Address
 	for (i = 0; i < (pBootData1->NrImages); ++i) {
 		assert(pBootData1->Images[i].ImageAddr < (1ULL << 32));
 		if (!Download((UCHAR*)pImg + pBootData1->Images[i].Offset - IVT_OFFSET_SD,
 			pBootData1->Images[i].ImageSize,
-			(UINT)SCUViewAddr(pBootData1->Images[i].ImageAddr)))
+			(UINT)SCUViewAddr(pBootData1->Images[i].ImageAddr))) {
+			_tprintf(_T("Failed to download first container images!\r\n"));
 			return FALSE;
+		}
 	}
 
 	//Load all the images in the second container to their respective Address
@@ -588,12 +594,16 @@ BOOL MxHidDevice::RunMxMultiImg(UCHAR* pBuffer, ULONGLONG dataCount)
 		assert(pBootData2->Images[i].ImageAddr < (1ULL << 32));
 		if (!Download((UCHAR*)pImg + pBootData2->Images[i].Offset - IVT_OFFSET_SD,
 			pBootData2->Images[i].ImageSize,
-			(UINT)SCUViewAddr(pBootData2->Images[i].ImageAddr)))
+			(UINT)SCUViewAddr(pBootData2->Images[i].ImageAddr))) {
+			_tprintf(_T("Failed to download second container images!\r\n"));
 			return FALSE;
+		}
 	}
 
-	if (!SkipDCD())
+	if (!SkipDCD()) {
+		_tprintf(_T("Failed to Skip DCDs!\r\n"));
 		return FALSE;
+	}
 
 	assert(pIVT->SelfAddr < (1ULL << 32));
 	return Jump((UINT)pIVT->SelfAddr);
