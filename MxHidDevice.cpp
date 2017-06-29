@@ -760,6 +760,9 @@ BOOL MxHidDevice::TransData(UINT address, UINT byteCount, const unsigned char * 
 	SDPCmd.data = 0;
 	SDPCmd.address = address;
 
+	//Mscale need extra delay. Reason unknown.
+	Sleep(10);
+
 	if (!SendCmd(&SDPCmd))
 		return FALSE;
 
