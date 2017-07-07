@@ -269,7 +269,7 @@ int MxSingleImgRun(CString fwFilename, UCHAR* DataBuf, ULONGLONG fwSize, MxHidDe
 	//
 	// Load firmware
 	//
-	bRet = g_pMxHidDevice->Download(DataBuf, fwSize, pMxFunc->ImageParameter.PhyRAMAddr4KRL);
+	bRet = g_pMxHidDevice->Download(DataBuf + pMxFunc->ImageParameter.CodeOffset, fwSize, pMxFunc->ImageParameter.PhyRAMAddr4KRL);
 	if (!bRet)
 	{
 		TRACE(__FUNCTION__ " ERROR: During download.\n");

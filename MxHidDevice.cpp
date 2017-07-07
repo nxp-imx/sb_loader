@@ -466,7 +466,7 @@ BOOL MxHidDevice::RunPlugIn(UCHAR* pBuffer, ULONGLONG dataCount, PMxFunc pMxFunc
 	//   0x04    IMAGE SIZE
 	//   0x08    PLUGIN FLAG
 	PBootData pPluginDataBuf = (PBootData)(pPlugIn + (pIVT->BootData - pIVT->SelfAddr) / sizeof(DWORD));
-	if (pPluginDataBuf->PluginFlag)
+	if (pPluginDataBuf->PluginFlag || pIVT->Reserved)
 	{
 		//Plugin mode
 
@@ -488,31 +488,46 @@ BOOL MxHidDevice::RunPlugIn(UCHAR* pBuffer, ULONGLONG dataCount, PMxFunc pMxFunc
 			return FALSE;
 		}
 
-		//---------------------------------------------------------
-		//Download eboot to ram		
-		//Search IVT2.
-		//ImgIVTOffset indicates the IVT's offset from the beginning of the image.
-		DWORD IVT2Offset = sizeof(IvtHeader);
+		if (pIVT->Reserved)
+		{
+			image_header_t *pImage = (image_header_t*)(pBuffer + pIVT->Reserved);
+			if (EndianSwap(pImage->ih_magic) == IH_MAGIC)
+			{
+				pMxFunc->ImageParameter.PhyRAMAddr4KRL = EndianSwap(pImage->ih_load);
+				pMxFunc->ImageParameter.CodeOffset = pIVT->Reserved + sizeof(image_header_t);
+				pMxFunc->ImageParameter.ExecutingAddr = EndianSwap(pImage->ih_ep);
 
-		while ((IVT2Offset + ImgIVTOffset) < dataCount &&
-			(pPlugIn[IVT2Offset / sizeof(DWORD)] != IVT_BARKER_HEADER &&
-				pPlugIn[IVT2Offset / sizeof(DWORD)] != IVT_BARKER2_HEADER))
-			IVT2Offset += sizeof(DWORD);
+				pMxFunc->pIVT = NULL;
+			}
+		}
+		else 
+		{
+			//---------------------------------------------------------
+			//Download eboot to ram		
+			//Search IVT2.
+			//ImgIVTOffset indicates the IVT's offset from the beginning of the image.
+			DWORD IVT2Offset = sizeof(IvtHeader);
 
-		if ((IVT2Offset + ImgIVTOffset) >= dataCount)
-			return FALSE;
-		pIVT2 = (PIvtHeader)(pPlugIn + IVT2Offset / sizeof(DWORD));
+			while ((IVT2Offset + ImgIVTOffset) < dataCount &&
+				(pPlugIn[IVT2Offset / sizeof(DWORD)] != IVT_BARKER_HEADER &&
+					pPlugIn[IVT2Offset / sizeof(DWORD)] != IVT_BARKER2_HEADER))
+				IVT2Offset += sizeof(DWORD);
 
-		//IVTOffset indicates the offset used by ROM, entirely different with ImgIVTOffset.
-		DWORD IVTOffset = pIVT->SelfAddr - pPluginDataBuf->ImageStartAddr;
+			if ((IVT2Offset + ImgIVTOffset) >= dataCount)
+				return FALSE;
+			pIVT2 = (PIvtHeader)(pPlugIn + IVT2Offset / sizeof(DWORD));
 
-		PBootData pBootDataBuf = (PBootData)(pPlugIn + (pIVT2->BootData - pIVT2->SelfAddr + IVT2Offset) / sizeof(DWORD));
+			//IVTOffset indicates the offset used by ROM, entirely different with ImgIVTOffset.
+			DWORD IVTOffset = pIVT->SelfAddr - pPluginDataBuf->ImageStartAddr;
 
-		pMxFunc->ImageParameter.PhyRAMAddr4KRL = pBootDataBuf->ImageStartAddr + IVTOffset - ImgIVTOffset;
-		pMxFunc->ImageParameter.CodeOffset = pIVT2->ImageStartAddr - pMxFunc->ImageParameter.PhyRAMAddr4KRL;
-		pMxFunc->ImageParameter.ExecutingAddr = pIVT2->ImageStartAddr;
+			PBootData pBootDataBuf = (PBootData)(pPlugIn + (pIVT2->BootData - pIVT2->SelfAddr + IVT2Offset) / sizeof(DWORD));
 
-		pMxFunc->pIVT = pIVT2;
+			pMxFunc->ImageParameter.PhyRAMAddr4KRL = pBootDataBuf->ImageStartAddr + IVTOffset - ImgIVTOffset;
+			pMxFunc->ImageParameter.CodeOffset = pIVT2->ImageStartAddr - pMxFunc->ImageParameter.PhyRAMAddr4KRL;
+			pMxFunc->ImageParameter.ExecutingAddr = pIVT2->ImageStartAddr;
+
+			pMxFunc->pIVT = pIVT2;
+		}
 	}
 	else if (pIVT->DCDAddress)
 	{
