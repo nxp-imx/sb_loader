@@ -490,11 +490,13 @@ BOOL MxHidDevice::RunPlugIn(UCHAR* pBuffer, ULONGLONG dataCount, PMxFunc pMxFunc
 
 		if (pIVT->Reserved)
 		{
-			image_header_t *pImage = (image_header_t*)(pBuffer + pIVT->Reserved);
+			Sleep(200);
+			//this->FindKnownHidDevices();
+			image_header_t *pImage = (image_header_t*)(pBuffer + pIVT->Reserved + IVT_OFFSET_SD);
 			if (EndianSwap(pImage->ih_magic) == IH_MAGIC)
 			{
 				pMxFunc->ImageParameter.PhyRAMAddr4KRL = EndianSwap(pImage->ih_load);
-				pMxFunc->ImageParameter.CodeOffset = pIVT->Reserved + sizeof(image_header_t);
+				pMxFunc->ImageParameter.CodeOffset = pIVT->Reserved + sizeof(image_header_t) + IVT_OFFSET_SD;
 				pMxFunc->ImageParameter.ExecutingAddr = EndianSwap(pImage->ih_ep);
 
 				pMxFunc->pIVT = NULL;
