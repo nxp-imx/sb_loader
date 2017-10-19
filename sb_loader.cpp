@@ -234,6 +234,7 @@ BOOL SearchDevice()
 
 	if ((g_pHidDevice->GetDevType() != MX28) && (g_pHidDevice->GetDevType() != MX23))
 	{
+		//g_pHidDevice->Close();
 		g_pMxHidDevice = new MxHidDevice();
 		g_pDeviceManager->FindHidDevice(g_pMxHidDevice, 2);
 	}
@@ -269,7 +270,7 @@ int MxSingleImgRun(CString fwFilename, UCHAR* DataBuf, ULONGLONG fwSize, MxHidDe
 	//
 	// Load firmware
 	//
-	bRet = g_pMxHidDevice->Download(DataBuf + pMxFunc->ImageParameter.CodeOffset, fwSize - pMxFunc->ImageParameter.CodeOffset, pMxFunc->ImageParameter.PhyRAMAddr4KRL);
+	bRet = g_pMxHidDevice->LoadFirmware(DataBuf, fwSize, pMxFunc);
 	if (!bRet)
 	{
 		TRACE(__FUNCTION__ " ERROR: During download.\n");

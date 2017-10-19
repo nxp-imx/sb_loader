@@ -249,6 +249,11 @@ public:
 	//int GetRKLVersion(CString& fmodel, int& len, int& mxType);
 	BOOL InitMemoryDevice(MemoryType MemType);
 	//BOOL ProgramFlash(std::ifstream& file, UINT address, UINT cmdID, UINT flags, Device::UI_Callback callback);
+	BOOL LoadFirmware(UCHAR *pBuffer, ULONGLONG dataCount, PMxFunc pMxFunc)
+	{
+		return m_IsFitImage ? LoadFitImage(pBuffer + pMxFunc->ImageParameter.CodeOffset, dataCount - pMxFunc->ImageParameter.CodeOffset, pMxFunc) 
+							: Download(pBuffer + pMxFunc->ImageParameter.CodeOffset, dataCount - pMxFunc->ImageParameter.CodeOffset, pMxFunc->ImageParameter.PhyRAMAddr4KRL);
+	}
 	BOOL Download(UCHAR* pBuffer, ULONGLONG dataCount, UINT RAMAddress);
 	BOOL Execute(UINT32 ImageStartAddr);
 	BOOL Jump(UINT RAMAddress);
@@ -258,6 +263,7 @@ public:
 	DWORD GetIvtOffset(DWORD *start, ULONGLONG dataCount);
 	BOOL RunMxMultiImg(UCHAR* pBuffer, ULONGLONG dataCount);
 	BOOL MxHidDevice::RunPlugIn(UCHAR* pBuffer, ULONGLONG dataCount, PMxFunc pMxFunc);
+	BOOL LoadFitImage(UCHAR *fit, ULONGLONG dataCount, PMxFunc pMxFunc);
 
 	unsigned long long SCUViewAddr(unsigned long long addr)
 	{
@@ -339,5 +345,6 @@ private:
 	HAB_t _habType;
 	//unsigned char _pSDPCmdBuf[SDP_REPORT_LENGTH];
 	enum ChannelType { ChannelType_UART = 0, ChannelType_USB };
+	BOOL m_IsFitImage;
 };
 #endif //  __MXHIDDEVICE_H__

@@ -23,6 +23,8 @@ extern "C" {
 #include "MxHidDevice.h"
 #include "MemoryInit.h"
 
+#include "libfdt\libfdt.h"
+
 #define DCD_WRITE
 
 inline DWORD EndianSwap(DWORD x)
@@ -37,7 +39,7 @@ MxHidDevice::MxHidDevice()
 {
 	//Initialize(MX508_USB_VID,MX508_USB_PID);
 	_chipFamily = MX508;
-
+	m_IsFitImage = FALSE;
 	//InitMemoryDevice();
 	//TRACE("************The new i.mx device is initialized**********\n");
 	//TRACE("\n");
@@ -438,6 +440,165 @@ DWORD MxHidDevice::GetIvtOffset(DWORD *start, ULONGLONG dataCount)
 	return ImgIVTOffset;
 }
 
+int FitGetImageNodeOffset(UCHAR *fit, int image_node, char * type, int index)
+{
+	int offset;
+	int len;
+	const char * config;
+	int config_node = 0;
+
+	offset = fdt_path_offset(fit, "/configurations");
+	if (offset < 0)
+	{
+		TRACE(_T("Can't found configurations\n"));
+		return offset;
+	}
+
+	config = (const char *)fdt_getprop(fit, offset, "default", &len);
+	for (int node = fdt_first_subnode(fit, offset); node >= 0; node = fdt_next_subnode(fit, node))
+	{
+		const char *name = fdt_get_name(fit, node, &len);
+		if (strcmp(config, name) == 0)
+		{
+			config_node = node;
+			break;
+		}
+	}
+
+	if (config_node <= 0)
+	{
+		TRACE(_T("can't find default config"));
+		return config_node;
+	}
+
+	char * name = (char*)fdt_getprop(fit, config_node, type, &len);
+	if (!name)
+	{
+		TRACE(_T("can't find type\n"));
+		return -1;
+	}
+
+	char *str = name;
+	for (int i=0; i < index; i++)
+	{
+		str = strchr(str, '\0') + 1;
+		if (!str || (str - name) > len)
+		{
+			TRACE(_T("can't found index %d node"), index);
+			return -1;
+		}
+	}
+
+	return fdt_subnode_offset(fit, image_node, str);
+}
+
+int FitGetIntProp(UCHAR *fit, int node, char *prop, int *value)
+{
+	int len;
+	const void * data = fdt_getprop(fit, node, prop, &len);
+	if (data == NULL)
+	{
+		TRACE(_T("failure to get load prop\n"));
+		return -1;
+	}
+	*value = fdt32_to_cpu(*(int*)data);
+	return 0;
+}
+
+
+BOOL MxHidDevice::LoadFitImage(UCHAR *fit, ULONGLONG dataCount, PMxFunc pMxFunc)
+{
+	
+	int image_offset = fdt_path_offset(fit, "/images");
+	if (image_offset < 0)
+	{
+		TRACE(_T("Can't find /images\n"));
+		return FALSE;
+	}
+
+	int depth = 0;
+	int count = 0;
+	int node_offset = 0;
+	int entry = 0;
+
+	int size = fdt_totalsize(fit);
+	size = (size + 3) & ~3;
+	int base_offset = (size + 3) & ~3;
+
+	int firmware; 
+	firmware = FitGetImageNodeOffset(fit, image_offset, "firmware", 0);
+	if (firmware < 0)
+	{
+		TRACE(_T("can't find firmware\n"));
+		return FALSE;
+	}
+
+	int firmware_load, offset, firmware_len;
+
+	if (FitGetIntProp(fit, firmware, "load", &firmware_load) ||
+		FitGetIntProp(fit, firmware, "data-offset", &offset) ||
+		FitGetIntProp(fit, firmware, "data-size", &firmware_len))
+	{
+		TRACE(_T("can't find load data-offset data-len\n"));
+		return FALSE;
+	}
+
+	if (!Download(fit + base_offset + offset, firmware_len, firmware_load))
+		return FALSE;
+
+
+	int fdt;
+	fdt = FitGetImageNodeOffset(fit, image_offset, "fdt", 0);
+	if (fdt < 0)
+	{
+		TRACE(_T("can't find fdt\n"));
+		return FALSE;
+	}
+
+	int fdt_load, fdt_size;
+
+	if (FitGetIntProp(fit, fdt, "data-offset", &offset) ||
+		FitGetIntProp(fit, fdt, "data-size", &fdt_size))
+	{
+		TRACE(_T("can't find load data-offset data-len\n"));
+		return FALSE;
+	}
+
+	fdt_load = firmware_load + firmware_len;
+
+	if (!Download(fit + base_offset + offset, fdt_size, fdt_load))
+		return FALSE;
+
+	int load_node;
+	int index=0;
+	do
+	{
+		load_node = FitGetImageNodeOffset(fit, image_offset, "loadables", index);
+		if (load_node >= 0)
+		{
+			int load, offset, len, entry;
+			if (FitGetIntProp(fit, load_node, "load", &load) ||
+				FitGetIntProp(fit, load_node, "data-offset", &offset) ||
+				FitGetIntProp(fit, load_node, "data-size", &len))
+			{
+				TRACE(_T("can't find load data-offset data-len\n"));
+				return FALSE;
+			}
+			if (!Download(fit + base_offset + offset, len, load))
+				return FALSE;
+
+			if (FitGetIntProp(fit, load_node, "entry", &entry) == 0)
+			{
+				pMxFunc->ImageParameter.ExecutingAddr = entry;
+				pMxFunc->pIVT = NULL;
+			}	
+		}
+		index++;
+	} while (load_node >= 0);
+
+	return TRUE;
+}
+
 BOOL MxHidDevice::RunPlugIn(UCHAR* pBuffer, ULONGLONG dataCount, PMxFunc pMxFunc)
 {
 	DWORD * pPlugIn = NULL;
@@ -488,11 +649,12 @@ BOOL MxHidDevice::RunPlugIn(UCHAR* pBuffer, ULONGLONG dataCount, PMxFunc pMxFunc
 			return FALSE;
 		}
 
+		UCHAR * pI = pBuffer + pIVT->Reserved + IVT_OFFSET_SD;
 		if (pIVT->Reserved)
 		{
 			Sleep(200);
 			//this->FindKnownHidDevices();
-			image_header_t *pImage = (image_header_t*)(pBuffer + pIVT->Reserved + IVT_OFFSET_SD);
+			image_header_t *pImage = (image_header_t*)(pI);
 			if (EndianSwap(pImage->ih_magic) == IH_MAGIC)
 			{
 				pMxFunc->ImageParameter.PhyRAMAddr4KRL = EndianSwap(pImage->ih_load);
@@ -500,6 +662,16 @@ BOOL MxHidDevice::RunPlugIn(UCHAR* pBuffer, ULONGLONG dataCount, PMxFunc pMxFunc
 				pMxFunc->ImageParameter.ExecutingAddr = EndianSwap(pImage->ih_ep);
 
 				pMxFunc->pIVT = NULL;
+			} 
+			else if (fdt_check_header(pI) == 0)
+			{
+				m_IsFitImage = TRUE;
+				pMxFunc->ImageParameter.CodeOffset = pIVT->Reserved + IVT_OFFSET_SD;
+			}
+			else
+			{
+				TRACE(_T("Unknow Image format\n"));
+				return FALSE;
 			}
 		}
 		else 
@@ -769,7 +941,8 @@ BOOL MxHidDevice::TransData(UINT address, UINT byteCount, const unsigned char * 
 	UINT MaxHidTransSize = m_Capabilities.OutputReportByteLength - 1;
 	UINT TransSize;
 
-	byteCount = ((byteCount + MaxHidTransSize -1) / MaxHidTransSize) * MaxHidTransSize;
+	if (this->m_DevType > MX8QM)
+		byteCount = ((byteCount + MaxHidTransSize -1) / MaxHidTransSize) * MaxHidTransSize;
 
 	SDPCmd.command = ROM_KERNEL_CMD_WR_FILE;
 	SDPCmd.dataCount = byteCount;
