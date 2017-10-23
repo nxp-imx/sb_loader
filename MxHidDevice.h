@@ -166,6 +166,8 @@ public:
 		unsigned long long	ImageEntry;
 		unsigned long		ImageSize;
 		unsigned long		ImageFlag;
+		unsigned long		flag1;
+		unsigned long		flag2;
 	}SubImageInfo;
 
 	typedef struct _BootDataV2
