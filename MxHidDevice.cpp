@@ -421,10 +421,10 @@ BOOL MxHidDevice::InitMemoryDevice(MemoryType MemType)
 }
 #endif
 
-DWORD MxHidDevice::GetIvtOffset(DWORD *start, ULONGLONG dataCount)
+DWORD MxHidDevice::GetIvtOffset(DWORD *start, ULONGLONG dataCount, DWORD begin)
 {
 	//Search for a valid IVT Code starting from the given address
-	DWORD ImgIVTOffset = 0;
+	DWORD ImgIVTOffset = begin;
 
 	while (ImgIVTOffset < dataCount &&
 		(start[ImgIVTOffset / sizeof(DWORD)] != IVT_BARKER_HEADER &&
@@ -602,31 +602,49 @@ BOOL MxHidDevice::LoadFitImage(UCHAR *fit, ULONGLONG dataCount, PMxFunc pMxFunc)
 BOOL MxHidDevice::RunPlugIn(UCHAR* pBuffer, ULONGLONG dataCount, PMxFunc pMxFunc)
 {
 	DWORD * pPlugIn = NULL;
-	DWORD ImgIVTOffset = GetIvtOffset((DWORD*)pBuffer, dataCount);
+	DWORD ImgIVTOffset = 0;
 	DWORD PlugInAddr = 0;
 	PIvtHeader pIVT = NULL, pIVT2 = NULL;
+	PBootData pPluginDataBuf;
 
-	//Search for IVT
-	pPlugIn = (DWORD *)pBuffer;
+	while (1)
+	{
+		ImgIVTOffset = GetIvtOffset((DWORD*)(pBuffer), dataCount, ImgIVTOffset);
+		if (ImgIVTOffset < 0)
+		{
+			TRACE(_T("Can't find IVT header\n"));
+			return FALSE;
+		}
 
-	//Now we find IVT
-	pPlugIn += ImgIVTOffset / sizeof(DWORD);
+		//Search for IVT
+		pPlugIn = (DWORD *)pBuffer;
 
-	pIVT = (PIvtHeader)pPlugIn;
+		//Now we find IVT
+		pPlugIn += ImgIVTOffset / sizeof(DWORD);
 
-	//Set image parameter as if we don't use a plug-in, gets overwritten in case we use a plug-in by IVT2.
-	pMxFunc->ImageParameter.PhyRAMAddr4KRL = pIVT->SelfAddr - ImgIVTOffset;
-	pMxFunc->ImageParameter.CodeOffset = pIVT->ImageStartAddr - pMxFunc->ImageParameter.PhyRAMAddr4KRL;
-	pMxFunc->ImageParameter.ExecutingAddr = pIVT->ImageStartAddr;
-	pMxFunc->pIVT = pIVT;
+		pIVT = (PIvtHeader)pPlugIn;
 
-	//Now we have to judge DCD way or plugin way used in the image
-	//The method is to check plugin flag in boot data region
-	// IVT boot data format
-	//   0x00    IMAGE START ADDR
-	//   0x04    IMAGE SIZE
-	//   0x08    PLUGIN FLAG
-	PBootData pPluginDataBuf = (PBootData)(pPlugIn + (pIVT->BootData - pIVT->SelfAddr) / sizeof(DWORD));
+		//Set image parameter as if we don't use a plug-in, gets overwritten in case we use a plug-in by IVT2.
+		pMxFunc->ImageParameter.PhyRAMAddr4KRL = pIVT->SelfAddr - ImgIVTOffset;
+		pMxFunc->ImageParameter.CodeOffset = pIVT->ImageStartAddr - pMxFunc->ImageParameter.PhyRAMAddr4KRL;
+		pMxFunc->ImageParameter.ExecutingAddr = pIVT->ImageStartAddr;
+		pMxFunc->pIVT = pIVT;
+
+		//Now we have to judge DCD way or plugin way used in the image
+		//The method is to check plugin flag in boot data region
+		// IVT boot data format
+		//   0x00    IMAGE START ADDR
+		//   0x04    IMAGE SIZE
+		//   0x08    PLUGIN FLAG
+		pPluginDataBuf = (PBootData)(pPlugIn + (pIVT->BootData - pIVT->SelfAddr) / sizeof(DWORD));
+
+		//skip HDMI image
+		if (pPluginDataBuf->PluginFlag & 0xFFFFFFFE)
+			ImgIVTOffset += 0x100;
+		else
+			break;
+	}
+
 	if (pPluginDataBuf->PluginFlag || pIVT->Reserved)
 	{
 		//Plugin mode
@@ -649,7 +667,7 @@ BOOL MxHidDevice::RunPlugIn(UCHAR* pBuffer, ULONGLONG dataCount, PMxFunc pMxFunc
 			return FALSE;
 		}
 
-		UCHAR * pI = pBuffer + pIVT->Reserved + IVT_OFFSET_SD;
+		UCHAR * pI = ((UCHAR*)pIVT) + pIVT->Reserved + IVT_OFFSET_SD;
 		if (pIVT->Reserved)
 		{
 			Sleep(200);
@@ -666,7 +684,7 @@ BOOL MxHidDevice::RunPlugIn(UCHAR* pBuffer, ULONGLONG dataCount, PMxFunc pMxFunc
 			else if (fdt_check_header(pI) == 0)
 			{
 				m_IsFitImage = TRUE;
-				pMxFunc->ImageParameter.CodeOffset = pIVT->Reserved + IVT_OFFSET_SD;
+				pMxFunc->ImageParameter.CodeOffset = (pI - pBuffer);
 			}
 			else
 			{

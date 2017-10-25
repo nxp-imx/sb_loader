@@ -262,7 +262,7 @@ public:
 	BOOL RegRead(UINT address, UINT *value);
 	BOOL RegWrite(UINT address, UINT value);
 	BOOL SkipDCD();
-	DWORD GetIvtOffset(DWORD *start, ULONGLONG dataCount);
+	DWORD GetIvtOffset(DWORD *start, ULONGLONG dataCount, DWORD begin=0);
 	BOOL RunMxMultiImg(UCHAR* pBuffer, ULONGLONG dataCount);
 	BOOL MxHidDevice::RunPlugIn(UCHAR* pBuffer, ULONGLONG dataCount, PMxFunc pMxFunc);
 	BOOL LoadFitImage(UCHAR *fit, ULONGLONG dataCount, PMxFunc pMxFunc);
