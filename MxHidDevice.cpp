@@ -959,7 +959,7 @@ BOOL MxHidDevice::TransData(UINT address, UINT byteCount, const unsigned char * 
 	UINT MaxHidTransSize = m_Capabilities.OutputReportByteLength - 1;
 	UINT TransSize;
 
-	if (this->m_DevType > MX8QM)
+	if (this->m_DevType >= MX8QM)
 		byteCount = ((byteCount + MaxHidTransSize -1) / MaxHidTransSize) * MaxHidTransSize;
 
 	SDPCmd.command = ROM_KERNEL_CMD_WR_FILE;
