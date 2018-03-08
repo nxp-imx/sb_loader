@@ -113,6 +113,7 @@ int _tmain(int argc, TCHAR* argv[], TCHAR* envp[])
 		{
 		case MX23:
 		case MX28:
+		case MX8QXPB0:
 		{
 			nRetCode = StDownload(fwFilename, DataBuf, fwSize);
 		}

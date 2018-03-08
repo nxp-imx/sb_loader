@@ -71,15 +71,17 @@ int CStHidDevice::Download(UCHAR* data, ULONGLONG size, CString indent)
 	cbw.Flags = CBW_HOST_TO_DEVICE_DIR;
 
 	memcpy(&m_pWriteReport->Payload[0], &cbw, sizeof(_ST_HID_CBW));
-
-	if ((err = Write((UCHAR *)m_pWriteReport, m_Capabilities.OutputReportByteLength)) != ERROR_SUCCESS)
+	
+	if (this->GetDevType() == MX23 || this->GetDevType() == MX28)
 	{
-		_tprintf(_T("%s  Error(%d) during Write cbw.\n%sQuitting.\n"), _T("CStHidDevice::Download()"), err, _T(""));
-		CancelIo(m_hid_drive_handle);
-		free(buf);
-		return err;
+		if ((err = Write((UCHAR *)m_pWriteReport, m_Capabilities.OutputReportByteLength)) != ERROR_SUCCESS)
+		{
+			_tprintf(_T("%s  Error(%d) during Write cbw.\n%sQuitting.\n"), _T("CStHidDevice::Download()"), err, _T(""));
+			CancelIo(m_hid_drive_handle);
+			free(buf);
+			return err;
+		}
 	}
-
 	//
 	// Write to the device, splitting in the right number of blocks
 	//

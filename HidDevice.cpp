@@ -225,6 +225,9 @@ else INVLAID_HANDLE_VALUE.
 		case MX8MQ:
 			filter.Format(_T("%s#vid_%04x&pid_%04x"), _T("HID"), NXP_VID, MX8MQ_USB_PID);
 			break;
+		case MX8QXPB0:
+			filter.Format(_T("%s#vid_%04x&pid_%04x"), _T("HID"), NXP_VID, MX8QXP_USB_PID);
+			break;
 		default:
 			filter.Format(_T("%s#vid_%04x&pid_%04x"), _T("HID"), 0xFFFF, 0xFFFF);
 			break;
@@ -240,6 +243,43 @@ else INVLAID_HANDLE_VALUE.
 	// Is this our vid?  If not, ignore it.
 	if (DeviceFound)
 	{
+		if (DevType == MX8QXP)
+		{
+			SP_DEVINFO_DATA _deviceInfoData;
+			DWORD propertyRegDataType = 0;
+			DWORD requiredSize = 0;
+			DWORD propertyBufferSize = 0;
+			PBYTE propertyBuffer = NULL;
+			DWORD error;
+
+			if (!SetupDiGetDeviceRegistryProperty(HardwareDeviceInfo, &devInfoData, SPDRP_HARDWAREID, &propertyRegDataType, NULL, 0, &requiredSize))
+			{
+				error = GetLastError();
+				if (error != ERROR_INSUFFICIENT_BUFFER)
+					return INVALID_HANDLE_VALUE;
+			};
+
+			propertyBuffer = (PBYTE)malloc(requiredSize);
+			propertyBufferSize = requiredSize;
+
+
+			if (!SetupDiGetDeviceRegistryProperty(HardwareDeviceInfo, &devInfoData, SPDRP_HARDWAREID, &propertyRegDataType, propertyBuffer, propertyBufferSize, &requiredSize))
+			{
+				error = GetLastError();
+				free(propertyBuffer);
+				if (error != ERROR_INVALID_DATA)
+					return INVALID_HANDLE_VALUE;
+			};
+
+			CString value = (PTSTR)propertyBuffer;
+			free(propertyBuffer);
+
+			if (value.MakeUpper().Find(_T("REV_0001")) != -1)
+				DevType = MX8QXP; //Frank Li, debug for B0 branch
+			else
+				DevType = MX8QXPB0;
+		}
+
 		m_DevType = (DeviceType)DevType;
 		devName = devPath;
 		devInst = devInfoData.DevInst;
