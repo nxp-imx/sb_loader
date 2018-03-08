@@ -141,13 +141,15 @@ int CStHidDevice::Download(UCHAR* data, ULONGLONG size, CString indent)
 
 	// Read status:CSW_REPORT
 	Sleep(10);
-	if (err = Read((UCHAR *)m_pReadReport, m_Capabilities.InputReportByteLength))
+	if (this->GetDevType() == MX23 || this->GetDevType() == MX28)
 	{
-		_tprintf(_T("%s  Error(%d) during read.\n%sQuitting.\n"), _T(" CStHidDevice::Download()"), err, _T(""));
-		CancelIo(m_hid_drive_handle);
-		return err;
+		if (err = Read((UCHAR *)m_pReadReport, m_Capabilities.InputReportByteLength))
+		{
+			_tprintf(_T("%s  Error(%d) during read.\n%sQuitting.\n"), _T(" CStHidDevice::Download()"), err, _T(""));
+			CancelIo(m_hid_drive_handle);
+			return err;
+		}
 	}
-
 	_tprintf(_T("% Done.\n"));
 	return err;
 }
