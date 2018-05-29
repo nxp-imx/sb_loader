@@ -1,6 +1,13 @@
+** This tool will be replace by uuu (univerial update uilites)) **
+
+https://github.com/codeauroraforum/mfgtools.
+uuu will support both windows and linux platform. 
+
+This tools will stop maintaince. 
+
 # sb_loader ver 1.3
 
-The tool is used to download an image to IMX platform to run. 
+The tool is used to download an image to IMX platform to run.
 
 For mx23/28, the command is like this: 
 sb_loader -f xxx.sb
