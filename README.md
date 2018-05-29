@@ -1,4 +1,4 @@
-** This tool will be replace by uuu (univerial update uilites)) **
+* This tool will be replace by uuu (univerial update uilites)) *
 
 https://github.com/codeauroraforum/mfgtools.
 uuu will support both windows and linux platform. 
